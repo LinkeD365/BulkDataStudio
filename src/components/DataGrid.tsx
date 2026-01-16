@@ -42,7 +42,7 @@ interface DataGridProps {
 }
 
 export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
-  const { connection, dvSvc, vm, utils, onLog } = props;
+  const { connection,  vm, utils, } = props;
 
   function rowSelected(event: SelectionChangedEvent<any>): void {
     const selectedRows = event.api.getSelectedRows();

@@ -3,8 +3,8 @@ import { observer } from "mobx-react";
 
 import { SelectionValue, ViewModel } from "../model/ViewModel";
 import { dvService } from "../utils/dataverseService";
-import { SetStatus, UpdateColumn } from "../model/UpdateColumn";
-import { Combobox, Option, SelectionItemId, Button, Label, Input, Checkbox } from "@fluentui/react-components";
+import { UpdateColumn } from "../model/UpdateColumn";
+import { Combobox, Option, Button, Label, Input, Checkbox } from "@fluentui/react-components";
 import { SearchFilled } from "@fluentui/react-icons";
 import { LookupDialog } from "./LookupDialog";
 
@@ -19,7 +19,7 @@ interface UpdateValueProps {
 export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element => {
   const { connection, updateColumn, dvSvc, vm, onLog } = props;
   const [selectValues, setPicklistValues] = React.useState<SelectionValue[]>([]);
-  const [selectedItems, setSelectedItems] = React.useState<SelectionItemId[]>([]);
+
   const [lookupPopupOpen, setLookupPopupOpen] = React.useState<boolean>(false);
 
   React.useEffect(() => {
@@ -36,14 +36,11 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
           }
           const values = await dvSvc.getChoiceValues(
             vm.selectedTable?.logicalName || "",
-            updateColumn.column.logicalName
+            updateColumn.column.logicalName,
           );
           updateColumn.column.choiceValues = values;
           setPicklistValues(values);
           // Initialize selected items from field.selectedValues if available
-          if (updateColumn.selectedSelections && updateColumn.selectedSelections.length > 0) {
-            setSelectedItems(updateColumn.selectedSelections.map((sel) => sel.value));
-          }
           break;
         case "Money":
         case "Double":
@@ -67,7 +64,6 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
       placeholder="Select Option"
       value={updateColumn.selectedSelections?.[0]?.label || ""}
       onOptionSelect={(_, data) => {
-        setSelectedItems(data.selectedOptions);
         updateColumn.selectedSelections =
           updateColumn.column.choiceValues?.filter((cv) => data.selectedOptions.includes(cv.value)) || [];
       }}
@@ -135,8 +131,8 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
           updateColumn.column.format === "DateOnly"
             ? "date"
             : updateColumn.column.format === "TimeOnly"
-            ? "time"
-            : "datetime-local"
+              ? "time"
+              : "datetime-local"
         }
         onChange={(e) => (updateColumn.newValue = e.target.value)}
       ></Input>

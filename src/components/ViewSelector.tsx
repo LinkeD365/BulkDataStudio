@@ -23,7 +23,7 @@ interface BulkDataStudioProps {
 }
 
 export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Element => {
-  const { connection, dvSvc, vm, onLog } = props;
+  const { dvSvc, vm, onLog } = props;
   const [views, setViews] = React.useState<Array<View>>([]);
   const [localSelectedView, setLocalSelectedView] = React.useState<View>(vm.selectedView!);
   const [query, setQuery] = React.useState<string>("");
