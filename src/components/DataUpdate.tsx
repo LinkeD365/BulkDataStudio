@@ -8,7 +8,6 @@ import { ViewModel } from "../model/ViewModel";
 import { dvService } from "../utils/dataverseService";
 import { UpdateList } from "./UpdateList";
 import { UpdateAddField } from "./UpdateAddField";
-import { UpdateValue } from "./UpdateValue";
 import { TouchDialog, UpdateDialog } from "./UpdateDialog";
 import { utilService } from "../utils/utils";
 interface DataUpdateProps {
@@ -37,7 +36,7 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
       });
       return;
     }
-    
+
     if (vm.updateFields.some((field) => field.isValid === false)) {
       window.toolboxAPI.utils.showNotification({
         title: "Incomplete Field Values",

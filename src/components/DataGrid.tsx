@@ -35,14 +35,12 @@ const agTheme = themeQuartz.withParams({
 
 interface DataGridProps {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dvSvc: dvService;
   vm: ViewModel;
   utils: utilService;
-  onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
 export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
-  const { connection, dvSvc, vm, utils, onLog } = props;
+  const { connection, vm, utils } = props;
 
   function rowSelected(event: SelectionChangedEvent<any>): void {
     const selectedRows = event.api.getSelectedRows();

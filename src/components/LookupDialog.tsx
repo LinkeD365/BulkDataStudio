@@ -16,12 +16,10 @@ import {
   ComboboxProps,
   Button,
   DialogTrigger,
-  SearchBox,
 } from "@fluentui/react-components";
 import { UpdateColumn } from "../model/UpdateColumn";
 
 interface LookupDialogProps {
-  connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
   updateField: UpdateColumn;
@@ -46,7 +44,7 @@ const agTheme = themeQuartz.withParams({
   headerHeight: "30px",
 });
 export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Element => {
-  const { connection, dvSvc, vm, updateField, dialogOpen, onLog, onDialogClose } = props;
+  const { dvSvc, vm, updateField, dialogOpen, onLog, onDialogClose } = props;
   const [localSelectedView, setLocalSelectedView] = React.useState<View>();
   const [localSelectionValue, setLocalSelectionValue] = React.useState<SelectionValue>();
   const [data, setData] = React.useState<Array<any>>([]);
@@ -111,7 +109,7 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
 
   const onViewSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
     setLocalSelectedView(
-      updateField.column.lookupTargetTable!.views!.find((view) => view.id === (data.optionValue as string))!
+      updateField.column.lookupTargetTable!.views!.find((view) => view.id === (data.optionValue as string))!,
     );
   };
 
