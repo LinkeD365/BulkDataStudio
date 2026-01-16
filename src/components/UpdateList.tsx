@@ -35,7 +35,6 @@ const agTheme = themeQuartz.withParams({
 });
 
 interface UpdateListProps {
-  connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -51,7 +50,7 @@ const defaultColDef: ColDef = {
 };
 
 export const UpdateList = observer((props: UpdateListProps): React.JSX.Element => {
-  const { connection, dvSvc, vm, onLog } = props;
+  const { dvSvc, vm, onLog } = props;
 
   const cols: ColDef<UpdateColumn>[] = [
     { field: "column.displayName", headerName: "Field Name", flex: 2 },
@@ -59,9 +58,7 @@ export const UpdateList = observer((props: UpdateListProps): React.JSX.Element =
       field: "newValue",
       headerName: "New Value",
       cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) =>
-        params.data ? (
-          <UpdateValue updateColumn={params.data} connection={connection} dvSvc={dvSvc} vm={vm} onLog={onLog} />
-        ) : null,
+        params.data ? <UpdateValue updateColumn={params.data} dvSvc={dvSvc} vm={vm} onLog={onLog} /> : null,
     },
     {
       field: "setStatus",

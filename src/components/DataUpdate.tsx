@@ -11,7 +11,6 @@ import { UpdateAddField } from "./UpdateAddField";
 import { TouchDialog, UpdateDialog } from "./UpdateDialog";
 import { utilService } from "../utils/utils";
 interface DataUpdateProps {
-  connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
   utils: utilService;
@@ -19,7 +18,7 @@ interface DataUpdateProps {
 }
 
 export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element => {
-  const { connection, dvSvc, vm, utils, onLog } = props;
+  const { dvSvc, vm, utils, onLog } = props;
   const [selectedValue, setSelectedValue] = React.useState<TabValue>("update");
   const [updateDialogOpen, setUpdateDialogOpen] = React.useState<boolean>(false);
   const [touchDialogOpen, setTouchDialogOpen] = React.useState<boolean>(false);
@@ -86,11 +85,10 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
           </div>
         )}
       </TabList>
-      {selectedValue === "update" && <UpdateList connection={connection} dvSvc={dvSvc} vm={vm} onLog={onLog} />}
+      {selectedValue === "update" && <UpdateList dvSvc={dvSvc} vm={vm} onLog={onLog} />}
       {vm.updateFieldAddOpen && <UpdateAddField vm={vm} utils={utils} />}
       {updateDialogOpen && (
         <UpdateDialog
-          connection={connection}
           dvSvc={dvSvc}
           vm={vm}
           utils={utils}
@@ -101,7 +99,6 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
       )}
       {touchDialogOpen && (
         <TouchDialog
-          connection={connection}
           dvSvc={dvSvc}
           vm={vm}
           utils={utils}

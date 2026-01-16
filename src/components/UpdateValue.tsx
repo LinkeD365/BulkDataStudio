@@ -9,7 +9,6 @@ import { SearchFilled } from "@fluentui/react-icons";
 import { LookupDialog } from "./LookupDialog";
 
 interface UpdateValueProps {
-  connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
   updateColumn: UpdateColumn;
@@ -17,7 +16,7 @@ interface UpdateValueProps {
 }
 
 export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element => {
-  const { connection, updateColumn, dvSvc, vm, onLog } = props;
+  const { updateColumn, dvSvc, vm, onLog } = props;
   const [selectValues, setPicklistValues] = React.useState<SelectionValue[]>([]);
 
   const [lookupPopupOpen, setLookupPopupOpen] = React.useState<boolean>(false);

@@ -27,7 +27,6 @@ ModuleRegistry.registerModules([
 ]);
 
 import { SelectionValue, ViewModel } from "../model/ViewModel";
-import { dvService } from "../utils/dataverseService";
 import { utilService } from "../utils/utils";
 const agTheme = themeQuartz.withParams({
   headerHeight: "30px",
@@ -89,8 +88,8 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
   }, []);
   return (
     <div style={{ width: "100%", height: "85vh" }}>
-      
-      <AgGridReact suppressFieldDotNotation
+      <AgGridReact
+        suppressFieldDotNotation
         rowData={vm.data}
         columnDefs={cols}
         theme={agTheme}

@@ -23,7 +23,7 @@ interface BulkDataStudioProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
-  utils: utilService; 
+  utils: utilService;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
@@ -61,7 +61,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
             </div>
           </Allotment.Pane>
           <Allotment.Pane minSize={300}>
-            <DataUpdate connection={connection} dvSvc={dvSvc} vm={vm} utils={utils} onLog={onLog} />
+            <DataUpdate dvSvc={dvSvc} vm={vm} utils={utils} onLog={onLog} />
           </Allotment.Pane>
         </Allotment>
       </div>
