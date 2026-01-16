@@ -35,7 +35,7 @@ export const UpdateDialog = observer((props: UpdateDialogProps): React.JSX.Eleme
       .then(async () => {
         onLog("Records updated successfully", "success");
         window.toolboxAPI.utils.showNotification({
-          title: "Bulk Data Updater",
+          title: "Bulk Data Studio",
           body: `${vm.selectedRows.length} records updated successfully`,
           type: "success",
         });
@@ -45,7 +45,7 @@ export const UpdateDialog = observer((props: UpdateDialogProps): React.JSX.Eleme
         const errorMessage = error instanceof Error ? error.message : "Failed to update records";
         onLog(errorMessage, "error");
         window.toolboxAPI.utils.showNotification({
-          title: "Bulk Data Updater",
+          title: "Bulk Data Studio",
           body: errorMessage,
           type: "error",
         });
@@ -102,7 +102,7 @@ export const TouchDialog = observer((props: UpdateDialogProps): React.JSX.Elemen
       .then(async () => {
         onLog("Records touched successfully", "success");
         window.toolboxAPI.utils.showNotification({
-          title: "Bulk Data Updater",
+          title: "Bulk Data Studio",
           body: `${vm.selectedRows.length} records touched successfully`,
           type: "success",
         });
@@ -112,7 +112,7 @@ export const TouchDialog = observer((props: UpdateDialogProps): React.JSX.Elemen
         const errorMessage = error instanceof Error ? error.message : "Failed to update records";
         onLog(errorMessage, "error");
         window.toolboxAPI.utils.showNotification({
-          title: "Bulk Data Updater",
+          title: "Bulk Data Studio",
           body: errorMessage,
           type: "error",
           duration: 2000,
