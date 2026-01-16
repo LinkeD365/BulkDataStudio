@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { UpdateField } from "./update";
+import { UpdateColumn } from "./UpdateColumn";
 
 export class ViewModel {
   viewSelectorOpen: boolean = false;
@@ -7,8 +7,9 @@ export class ViewModel {
   selectedTable?: Table;
   selectedView?: View;
   updateFieldAddOpen: boolean = false;
-
-  updateFields: UpdateField[] = [];
+  selectedRows: SelectionValue[] = [];
+  updateFields: UpdateColumn[] = [];
+  data?: Array<any>;
   constructor() {
     makeAutoObservable(this);
   }
@@ -19,25 +20,28 @@ export class Table {
   displayName: string;
   id: string;
   typeCode: number;
-  fields: Field[] = [];
+  fields: Column[] = [];
   views: View[] = [];
   primaryIdAttribute: string;
   primaryNameAttribute: string;
+  setName: string;
 
   constructor(
     logicalName: string,
     displayName: string,
     id: string,
     typeCode: number,
-    primaryIdAttribute?: string,
-    primaryNameAttribute?: string
+    primaryIdAttribute: string,
+    primaryNameAttribute: string,
+    setName: string
   ) {
     this.logicalName = logicalName;
     this.displayName = displayName;
     this.id = id;
     this.typeCode = typeCode;
-    this.primaryIdAttribute = primaryIdAttribute!;
-    this.primaryNameAttribute = primaryNameAttribute!;
+    this.primaryIdAttribute = primaryIdAttribute;
+    this.primaryNameAttribute = primaryNameAttribute;
+    this.setName = setName;
   }
 }
 
@@ -54,18 +58,34 @@ export class View {
   }
 }
 
-export class Field {
+export class Column {
   logicalName: string;
   displayName: string;
   type: string;
-  primaryKey: boolean = false;
-  choiceValues: SelectionValue[] = [];
+  primaryKey: boolean;
+  choiceValues?: SelectionValue[];
   lookupTargetTable?: Table;
+  minValue?: number;
+  maxValue?: number;
+  precision?: number;
+  maxLength?: number;
+  format?: string;
 
-  constructor(logicalName: string, displayName: string, type: string) {
+  constructor(logicalName: string, displayName: string, type: string, primaryKey: boolean = false) {
     this.logicalName = logicalName;
     this.displayName = displayName;
     this.type = type;
+    this.primaryKey = primaryKey;
+  }
+
+  get dataName(): string {
+    switch (this.type) {
+      case "Lookup":
+      case "Owner":
+        return `_${this.logicalName}_value@OData.Community.Display.V1.FormattedValue`;
+      default:
+        return this.logicalName;
+    }
   }
 }
 

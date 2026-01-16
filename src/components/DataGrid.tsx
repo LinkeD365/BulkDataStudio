@@ -12,6 +12,7 @@ import {
   RowAutoHeightModule,
   RowSelectionOptions,
   RowSelectionModule,
+  SelectionChangedEvent,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 
@@ -25,8 +26,9 @@ ModuleRegistry.registerModules([
   RowSelectionModule,
 ]);
 
-import { ViewModel } from "../model/viewModel";
+import { SelectionValue, ViewModel } from "../model/ViewModel";
 import { dvService } from "../utils/dataverseService";
+import { utilService } from "../utils/utils";
 const agTheme = themeQuartz.withParams({
   headerHeight: "30px",
 });
@@ -35,39 +37,41 @@ interface DataGridProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
+  utils: utilService;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
 export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
-  const { connection, dvSvc, vm, onLog } = props;
-  const [data, setData] = React.useState<Array<any>>([]);
+  const { connection, dvSvc, vm, utils, onLog } = props;
 
+  function rowSelected(event: SelectionChangedEvent<any>): void {
+    const selectedRows = event.api.getSelectedRows();
+    if (selectedRows.length > 0) {
+      const selectionValues: SelectionValue[] = selectedRows.map((row) => {
+        return {
+          label: row[vm.selectedTable?.primaryNameAttribute || ""],
+          value: row[vm.selectedTable?.primaryIdAttribute || ""],
+        };
+      });
+      vm.selectedRows = selectionValues;
+    } else vm.selectedRows = [];
+  }
   React.useEffect(() => {
-    const loadData = async () => {
-      if (vm.selectedView) {
-        onLog(`Loading data for view: ${vm.selectedView.label}`, "info");
-        try {
-          const data = await dvSvc.loadData(vm.selectedView.fetchXml);
-          setData(data);
-          onLog(`Loaded ${data.length} records from view: ${vm.selectedView.label}`, "success");
-          console.log("Data loaded:", data);
-        } catch (error: any) {
-          onLog(`Error loading data: ${error.message}`, "error");
-        }
-      }
-    };
-    loadData();
-  }, [connection, vm.selectedView]);
+    if (utils && vm.selectedView && connection) utils.loadData();
+  }, [connection, utils, vm.selectedView]);
 
   const cols = React.useMemo(() => {
     return (
-      vm.selectedView?.fieldNames?.map((fieldName) => {
-        const field = vm.selectedTable?.fields.find((f) => f.logicalName === fieldName);
-        return {
-          headerName: field?.displayName || fieldName,
-          field: fieldName,
-        };
-      }) || []
+      vm.selectedView?.fieldNames
+        ?.filter((fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute)
+        .map((fieldName) => {
+          const field = vm.selectedTable?.fields.find((f) => f.logicalName === fieldName);
+          return {
+            headerName: field?.displayName || fieldName,
+            field: field?.dataName || fieldName,
+            flex: field?.logicalName === vm.selectedTable?.primaryNameAttribute ? 2 : 1,
+          };
+        }) || []
     );
   }, [vm.selectedView, vm.selectedTable]);
 
@@ -87,13 +91,15 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
   }, []);
   return (
     <div style={{ width: "100%", height: "85vh" }}>
-      <AgGridReact
-        rowData={data}
+      
+      <AgGridReact suppressFieldDotNotation
+        rowData={vm.data}
         columnDefs={cols}
         theme={agTheme}
         domLayout="normal"
         defaultColDef={defaultColDef}
         rowSelection={rowSelection}
+        onSelectionChanged={rowSelected}
       />
     </div>
   );
