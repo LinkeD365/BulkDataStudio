@@ -20,7 +20,6 @@ import {
 import { UpdateColumn } from "../model/UpdateColumn";
 
 interface LookupDialogProps {
-  connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
   updateField: UpdateColumn;
