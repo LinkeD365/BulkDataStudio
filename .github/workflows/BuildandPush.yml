@@ -27,10 +27,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: "Automated Version Bump"
-        uses: "phips28/gh-action-bump-version@master"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+     # - name: "Automated Version Bump"
+      #  uses: "phips28/gh-action-bump-version@master"
+      #  env:
+       #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Setup pnpm"
         uses: pnpm/action-setup@v4.2.0  
