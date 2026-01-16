@@ -16,7 +16,6 @@ import {
 import React from "react";
 
 interface BulkDataStudioProps {
-  connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
