@@ -1,6 +1,6 @@
 {
   "name": "@linked365/pptb-bulk-data-studio",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "displayName": "Bulk Data Studio",
   "description": "Bulk Data Studio is a Power Platform ToolBox tool that allows users to perform bulk data operations in Microsoft Dataverse environments.",
   "main": "index.html",
