@@ -27,8 +27,10 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "pnpm"
       - name: Install dependencies
-        run: pnpm install 
-             pnpm build
-             pnpm publish
+        run: pnpm install
+      - name: Build Tool         
+        run: pnpm build
+      - name: Publish
+        run: pnpm publish --provenance
         
           
