@@ -15,7 +15,6 @@ import {
 import { utilService } from "../utils/utils";
 
 interface UpdateDialogProps {
-  connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
   utils: utilService;
