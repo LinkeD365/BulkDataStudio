@@ -1,5 +1,5 @@
 import { observer } from "mobx-react";
-import { View, ViewModel } from "../model/viewModel";
+import { View, ViewModel } from "../model/ViewModel";
 import { dvService } from "../utils/dataverseService";
 import {
   Combobox,
@@ -11,6 +11,7 @@ import {
   DrawerFooter,
   Button,
   Field,
+  useComboboxFilter,
 } from "@fluentui/react-components";
 import React from "react";
 
@@ -25,12 +26,13 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   const { connection, dvSvc, vm, onLog } = props;
   const [views, setViews] = React.useState<Array<View>>([]);
   const [localSelectedView, setLocalSelectedView] = React.useState<View>(vm.selectedView!);
+  const [query, setQuery] = React.useState<string>("");
 
   React.useEffect(() => {
     const loadTables = async () => {
       if (vm.viewSelectorOpen && vm.tables.length === 0) {
         await dvSvc
-          .loadTables()
+          .getTables()
           .then((tables) => {
             vm.tables = tables;
             onLog(`Loaded ${tables.length} tables`, "success");
@@ -47,8 +49,8 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
     const loadViews = async () => {
       if (vm.selectedTable) {
         setViews([]);
-        console.log("Selected table changed:", vm.selectedTable);
-        setViews(await dvSvc.loadViews(vm.selectedTable));
+
+        setViews(await dvSvc.getViews(vm.selectedTable));
       }
     };
     loadViews();
@@ -59,7 +61,7 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
       if (vm.selectedTable) {
         onLog(`Loading metadata for table: ${vm.selectedTable.displayName}`, "info");
         if (!vm.selectedTable.fields || vm.selectedTable.fields.length === 0) {
-          const fields = await dvSvc.loadFields(vm.selectedTable.logicalName);
+          const fields = await dvSvc.getFields(vm.selectedTable.logicalName);
           vm.selectedTable.fields = fields;
           onLog(`Loaded ${fields.length} fields for table: ${vm.selectedTable.displayName}`, "success");
         }
@@ -69,6 +71,7 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   }, [vm.selectedTable]);
 
   React.useEffect(() => {
+    // Load view fieldNames from the xml when localSelectedView changes
     const loadViewMeta = async () => {
       if (localSelectedView) {
         localSelectedView.fieldNames =
@@ -76,7 +79,6 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
             .match(/attribute\s+name\s*=\s*["']([^"']+)["']/g)
             ?.map((attr) => attr.match(/["']([^"']+)["']/)?.[1])
             .filter((x): x is string => x !== undefined) || [];
-        console.log("Attributes:", localSelectedView.fieldNames);
       }
     };
     loadViewMeta();
@@ -84,6 +86,7 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
 
   const onTableSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
     vm.selectedTable = vm.tables.find((table) => table.logicalName === (data.optionValue as string));
+    setQuery(vm.selectedTable?.displayName || "");
   };
 
   const onViewSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
@@ -95,15 +98,12 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
     vm.viewSelectorOpen = false;
     onLog(`Selected view: ${localSelectedView.label}`, "success");
   };
-  const tablesList = (
-    <>
-      {vm.tables.map((table) => (
-        <Option key={table.id} value={table.logicalName}>
-          {table.displayName}
-        </Option>
-      ))}
-    </>
-  );
+
+  const tablesList = vm.tables.map((table) => ({
+    children: table.displayName,
+    value: table.logicalName,
+  }));
+  const children = useComboboxFilter(query, tablesList, { noOptionsMessage: "No tables found" });
   return (
     <>
       <Drawer open={vm.viewSelectorOpen} onOpenChange={(_, data) => (vm.viewSelectorOpen = data.open)} size="medium">
@@ -115,9 +115,10 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
                 disabled={vm.tables.length === 0}
                 onOptionSelect={onTableSelect}
                 placeholder="Select a table"
-                value={vm.selectedTable?.displayName || ""}
+                value={query}
+                onChange={(ev) => setQuery(ev.target.value)}
               >
-                {tablesList}
+                {children}
               </Combobox>
             </Field>
             <Field label="View">
@@ -125,10 +126,10 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
                 disabled={views.length === 0}
                 onOptionSelect={onViewSelect}
                 placeholder="Select a view"
-                // value={viewModel.selectedTable?.displayName || ""}
+                value={localSelectedView?.label || ""}
               >
                 {views.map((view) => (
-                  <Option key={view.id} value={view.id}>
+                  <Option key={view.id} text={view.label} value={view.id}>
                     {view.label}
                   </Option>
                 ))}

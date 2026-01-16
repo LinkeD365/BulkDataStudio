@@ -1,7 +1,7 @@
 import React from "react";
 
 import { observer } from "mobx-react";
-import { SelectionValue, View, ViewModel } from "../model/viewModel";
+import { SelectionValue, View, ViewModel } from "../model/ViewModel";
 import { dvService } from "../utils/dataverseService";
 import {
   Dialog,
@@ -16,14 +16,15 @@ import {
   ComboboxProps,
   Button,
   DialogTrigger,
+  SearchBox,
 } from "@fluentui/react-components";
-import { UpdateField } from "../model/update";
+import { UpdateColumn } from "../model/UpdateColumn";
 
 interface LookupDialogProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
-  updateField: UpdateField;
+  updateField: UpdateColumn;
   dialogOpen: boolean;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
   onDialogClose: () => void;
@@ -52,20 +53,20 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
 
   React.useEffect(() => {
     const loadViews = async () => {
-      if (updateField.field.type === "Lookup" && !updateField.field.lookupTargetTable) {
+      if (updateField.column.type === "Lookup" && !updateField.column.lookupTargetTable) {
         await dvSvc
-          .getLookupTargetTable(vm.selectedTable!.logicalName, updateField.field.logicalName)
+          .getLookupTargetTable(vm.selectedTable!.logicalName, updateField.column.logicalName)
           .then(async (lookupTable) => {
-            updateField.field.lookupTargetTable = vm.tables.find((t) => t.logicalName === lookupTable); // Assign the found table to the
-            console.log("Lookup target table logical name:", updateField.field.lookupTargetTable);
-            if (updateField.field.lookupTargetTable && !updateField.field.lookupTargetTable.views) {
-              await dvSvc.loadViews(updateField.field.lookupTargetTable!).then((views) => {
-                updateField.field.lookupTargetTable!.views = views;
+            updateField.column.lookupTargetTable = vm.tables.find((t) => t.logicalName === lookupTable); // Assign the found table to the
+
+            if (updateField.column.lookupTargetTable && !updateField.column.lookupTargetTable.views) {
+              await dvSvc.getViews(updateField.column.lookupTargetTable!).then((views) => {
+                updateField.column.lookupTargetTable!.views = views;
               });
             }
-            if (updateField.field.lookupTargetTable && !updateField.field.lookupTargetTable.fields) {
-              await dvSvc.loadFields(updateField.field.lookupTargetTable.logicalName).then((fields) => {
-                updateField.field.lookupTargetTable!.fields = fields;
+            if (updateField.column.lookupTargetTable && !updateField.column.lookupTargetTable.fields) {
+              await dvSvc.getFields(updateField.column.lookupTargetTable.logicalName).then((fields) => {
+                updateField.column.lookupTargetTable!.fields = fields;
               });
             }
           })
@@ -102,25 +103,23 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
     loadViewMeta();
   }, [localSelectedView]);
 
-  const viewsList = (updateField.field.lookupTargetTable?.views ?? []).map((view) => (
+  const viewsList = (updateField.column.lookupTargetTable?.views ?? []).map((view) => (
     <Option key={view.id} value={view.id}>
       {view.label}
     </Option>
   ));
 
   const onViewSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
-    console.log("Selected view ID:", data.optionValue);
     setLocalSelectedView(
-      updateField.field.lookupTargetTable!.views!.find((view) => view.id === (data.optionValue as string))!
+      updateField.column.lookupTargetTable!.views!.find((view) => view.id === (data.optionValue as string))!
     );
   };
 
   const cols = React.useMemo(() => {
-    console.log("Generating columns for view:", updateField.field.lookupTargetTable);
     return (
       localSelectedView?.fieldNames?.map((fieldName) => {
-        const field = updateField.field.lookupTargetTable!.fields.find((f) => f.logicalName === fieldName);
-        console.log("Column field:", fieldName, field);
+        const field = updateField.column.lookupTargetTable!.fields.find((f) => f.logicalName === fieldName);
+
         return {
           headerName: field?.displayName || fieldName,
           field: fieldName,
@@ -146,28 +145,26 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
   function lookupSelected(event: SelectionChangedEvent): void {
     const selectedRows = event.api.getSelectedRows();
     if (selectedRows.length > 0) {
-      const primaryKeyField = updateField.field.lookupTargetTable?.fields.find((f) => f.primaryKey);
-      const primaryKeyLogicalName = primaryKeyField?.logicalName;
-      if (primaryKeyLogicalName) {
-        setLocalSelectionValue({
-          label: selectedRows[0][updateField.field.lookupTargetTable?.primaryNameAttribute!],
-          value: selectedRows[0][primaryKeyLogicalName],
-        });
-      }
+      setLocalSelectionValue({
+        label: selectedRows[0][updateField.column.lookupTargetTable?.primaryNameAttribute!],
+        value: selectedRows[0][updateField.column.lookupTargetTable?.primaryIdAttribute!],
+      });
     } else setLocalSelectionValue(undefined);
   }
-  function selectRecord(event: React.MouseEvent<HTMLButtonElement>): void {
+  async function selectRecord(_: React.MouseEvent<HTMLButtonElement>): Promise<void> {
     if (localSelectionValue) {
-      updateField.selectionValues = [localSelectionValue];
+      updateField.selectedSelections = [localSelectionValue];
+
       onDialogClose();
     }
   }
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={(_e, data) => onDialogClose()}>
+    <Dialog open={dialogOpen} onOpenChange={(_) => onDialogClose()}>
       <DialogSurface>
         <DialogBody>
           <DialogTitle>Select a Lookup Value</DialogTitle>
+
           <DialogContent>
             <Field label="Select a view">
               <Combobox placeholder="Select a View" onOptionSelect={onViewSelect}>

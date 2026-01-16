@@ -1,6 +1,6 @@
 import { observer } from "mobx-react";
 import { dvService } from "../utils/dataverseService";
-import { ViewModel } from "../model/viewModel";
+import { ViewModel } from "../model/ViewModel";
 import {
   Menu,
   MenuButton,
@@ -17,17 +17,18 @@ import { DataGrid } from "./DataGrid";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import { DataUpdate } from "./DataUpdate";
+import { utilService } from "../utils/utils";
 
 interface BulkDataStudioProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   vm: ViewModel;
+  utils: utilService; 
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
 export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.Element => {
-  const { connection, dvSvc, vm, onLog } = props;
-
+  const { connection, dvSvc, vm, utils, onLog } = props;
   const toolbar = (
     <div>
       <Toolbar>
@@ -56,11 +57,11 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
         <Allotment defaultSizes={[100, 200]}>
           <Allotment.Pane minSize={200}>
             <div>
-              <DataGrid connection={connection} dvSvc={dvSvc} vm={vm} onLog={onLog} />
+              <DataGrid connection={connection} dvSvc={dvSvc} vm={vm} utils={utils} onLog={onLog} />
             </div>
           </Allotment.Pane>
           <Allotment.Pane minSize={300}>
-            <DataUpdate connection={connection} dvSvc={dvSvc} vm={vm} onLog={onLog} />
+            <DataUpdate connection={connection} dvSvc={dvSvc} vm={vm} utils={utils} onLog={onLog} />
           </Allotment.Pane>
         </Allotment>
       </div>

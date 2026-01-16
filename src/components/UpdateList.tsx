@@ -1,6 +1,6 @@
 import React from "react";
 import { observer } from "mobx-react";
-import { ViewModel } from "../model/viewModel";
+import { ViewModel } from "../model/ViewModel";
 import { dvService } from "../utils/dataverseService";
 import {
   ModuleRegistry,
@@ -14,12 +14,10 @@ import {
   SelectEditorModule,
   RowAutoHeightModule,
   RowSelectionModule,
-  GridReadyEvent,
 } from "ag-grid-community";
 import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
-import { SetStatus, UpdateField } from "../model/update";
-import { Combobox, Option } from "@fluentui/react-components";
-import { runInAction } from "mobx";
+import { SetStatus, UpdateColumn } from "../model/UpdateColumn";
+
 import { UpdateValue } from "./UpdateValue";
 
 ModuleRegistry.registerModules([
@@ -52,18 +50,17 @@ const defaultColDef: ColDef = {
   width: 100,
 };
 
-console.log("raw", Object.keys(SetStatus));
 export const UpdateList = observer((props: UpdateListProps): React.JSX.Element => {
   const { connection, dvSvc, vm, onLog } = props;
 
-  const cols: ColDef<UpdateField>[] = [
-    { field: "field.displayName", headerName: "Field Name", flex: 2 },
+  const cols: ColDef<UpdateColumn>[] = [
+    { field: "column.displayName", headerName: "Field Name", flex: 2 },
     {
       field: "newValue",
       headerName: "New Value",
-      cellRenderer: (params: CustomCellRendererProps<UpdateField>) =>
+      cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) =>
         params.data ? (
-          <UpdateValue field={params.data} connection={connection} dvSvc={dvSvc} vm={vm} onLog={onLog} />
+          <UpdateValue updateColumn={params.data} connection={connection} dvSvc={dvSvc} vm={vm} onLog={onLog} />
         ) : null,
     },
     {
@@ -79,7 +76,7 @@ export const UpdateList = observer((props: UpdateListProps): React.JSX.Element =
 
   return (
     <div style={{ width: "100%", height: "80vh", flexBasis: 0 }}>
-      <AgGridReact<UpdateField>
+      <AgGridReact<UpdateColumn>
         theme={agTheme}
         rowData={vm.updateFields || []}
         defaultColDef={defaultColDef}
