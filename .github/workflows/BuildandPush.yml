@@ -29,5 +29,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install 
              pnpm build
+             pnpm publish --provenance
         
           
