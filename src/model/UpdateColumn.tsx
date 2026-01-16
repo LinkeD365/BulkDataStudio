@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { Column, SelectionValue } from "./ViewModel";
+import { Column, SelectionValue } from "./vm";
 
 export class UpdateColumn {
   column: Column;

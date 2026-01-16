@@ -4,7 +4,7 @@ import { FluentProvider, webDarkTheme, webLightTheme } from "@fluentui/react-com
 import { BulkDataStudio } from "./components/BulkDataStudio";
 import { dvService } from "./utils/dataverseService";
 import { utilService } from "./utils/utils";
-import { ViewModel } from "./model/ViewModel";
+import { ViewModel } from "./model/vm";
 
 function App() {
   const { connection, refreshConnection } = useConnection();
@@ -41,7 +41,7 @@ function App() {
           break;
       }
     },
-    [refreshConnection, addLog]
+    [refreshConnection, addLog],
   );
 
   useToolboxEvents(handleEvent);

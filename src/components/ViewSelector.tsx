@@ -1,5 +1,5 @@
 import { observer } from "mobx-react";
-import { View, ViewModel } from "../model/ViewModel";
+import { View, ViewModel } from "../model/vm";
 import { dvService } from "../utils/dataverseService";
 import {
   Combobox,

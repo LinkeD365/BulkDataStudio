@@ -26,7 +26,7 @@ ModuleRegistry.registerModules([
   RowSelectionModule,
 ]);
 
-import { SelectionValue, ViewModel } from "../model/ViewModel";
+import { SelectionValue, ViewModel } from "../model/vm";
 import { utilService } from "../utils/utils";
 const agTheme = themeQuartz.withParams({
   headerHeight: "30px",

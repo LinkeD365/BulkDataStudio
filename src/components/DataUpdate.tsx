@@ -4,7 +4,7 @@ import { observer } from "mobx-react";
 import { TabList, Tab, SelectTabData, SelectTabEvent, TabValue, Button, Tooltip } from "@fluentui/react-components";
 import { AddSquareFilled, ArrowClockwiseFilled, HandPointFilled } from "@fluentui/react-icons";
 
-import { ViewModel } from "../model/ViewModel";
+import { ViewModel } from "../model/vm";
 import { dvService } from "../utils/dataverseService";
 import { UpdateList } from "./UpdateList";
 import { UpdateAddField } from "./UpdateAddField";

@@ -1,6 +1,6 @@
 import { observer } from "mobx-react";
 import { dvService } from "../utils/dataverseService";
-import { ViewModel } from "../model/ViewModel";
+import { ViewModel } from "../model/vm";
 import {
   Menu,
   MenuButton,

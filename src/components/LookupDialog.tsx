@@ -1,7 +1,7 @@
 import React from "react";
 
 import { observer } from "mobx-react";
-import { SelectionValue, View, ViewModel } from "../model/ViewModel";
+import { SelectionValue, View, ViewModel } from "../model/vm";
 import { dvService } from "../utils/dataverseService";
 import {
   Dialog,

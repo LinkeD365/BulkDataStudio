@@ -1,7 +1,7 @@
 import React from "react";
 
 import { observer } from "mobx-react";
-import { ViewModel } from "../model/ViewModel";
+import { ViewModel } from "../model/vm";
 import { dvService } from "../utils/dataverseService";
 import {
   Button,
