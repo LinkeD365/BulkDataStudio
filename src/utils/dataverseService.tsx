@@ -1,5 +1,5 @@
 import { UpdateColumn } from "../model/UpdateColumn";
-import { Column, SelectionValue, Table, View } from "../model/ViewModel";
+import { Column, SelectionValue, Table, View } from "../model/vm";
 
 interface dvServiceProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -46,7 +46,7 @@ export class dvService {
                   primaryIdAttribute: entity.PrimaryIdAttribute,
                   primaryNameAttribute: entity.PrimaryNameAttribute,
                   setName: entity.EntitySetName,
-                } as Table)
+                }) as Table,
             )
             .sort((a: Table, b: Table) => a.displayName.localeCompare(b.displayName));
         });
@@ -88,7 +88,7 @@ export class dvService {
             id: rec.savedqueryid ?? rec.id ?? "",
             label: rec.name ?? "",
             fetchXml: rec.fetchxml ?? rec.fetchXml ?? "",
-          } as View)
+          }) as View,
       );
       this.onLog(`Loaded ${views.length} user views`, "success");
 
@@ -140,8 +140,8 @@ export class dvService {
               attr.LogicalName,
               attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName,
               attr.AttributeType,
-              attr.IsPrimaryId
-            )
+              attr.IsPrimaryId,
+            ),
         )
         .sort((a: any, b: any) => a.displayName.localeCompare(b.displayName));
       this.onLog(`Loaded ${fields.length} fields for table ${tableLogicalName}`, "success");
@@ -166,7 +166,7 @@ export class dvService {
 
       const options = picklistMeta.OptionSet?.Options || [];
       const values: SelectionValue[] = options.map(
-        (opt: any) => new SelectionValue(opt.Label?.UserLocalizedLabel?.Label || "", opt.Value.toString())
+        (opt: any) => new SelectionValue(opt.Label?.UserLocalizedLabel?.Label || "", opt.Value.toString()),
       );
       this.onLog(`Picklist values loaded for field: ${fieldLogicalName}`, "success");
       return values;
@@ -266,9 +266,9 @@ export class dvService {
                   }
                   return acc;
                 }, {} as any),
-              }))
+              })),
             );
-          })
+          }),
         );
         data = data.flat();
       } else {
@@ -429,7 +429,7 @@ export class dvService {
             });
 
             await this.dvApi.updateMultiple(table.logicalName, touchData);
-          })
+          }),
         );
 
         this.onLog(`Successfully touched ${rows.length} records`, "success");

@@ -1,4 +1,4 @@
-import { Column, ViewModel } from "../model/ViewModel";
+import { Column, ViewModel } from "../model/vm";
 import { dvService } from "./dataverseService";
 
 interface utilsProps {

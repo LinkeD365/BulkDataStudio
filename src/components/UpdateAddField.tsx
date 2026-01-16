@@ -1,6 +1,6 @@
 import React from "react";
 import { observer } from "mobx-react";
-import { Column, ViewModel } from "../model/ViewModel";
+import { Column, ViewModel } from "../model/vm";
 
 import {
   Button,
@@ -76,11 +76,11 @@ export const UpdateAddField = observer((props: UpdateAddFieldProps): React.JSX.E
   const { vm, utils } = props;
   const [onlyViewColumns, setOnlyViewColumns] = React.useState<boolean>(true);
   const [filteredColumns, setFilteredColumns] = React.useState<Array<Column>>(
-    vm.selectedTable?.fields.filter((field) => !field.primaryKey) || []
+    vm.selectedTable?.fields.filter((field) => !field.primaryKey) || [],
   );
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [selectedItems, setSelectedItems] = React.useState<SelectionItemId[]>(
-    vm.updateFields.map((uf) => uf.column.logicalName)
+    vm.updateFields.map((uf) => uf.column.logicalName),
   );
 
   React.useEffect(() => {
@@ -109,15 +109,15 @@ export const UpdateAddField = observer((props: UpdateAddFieldProps): React.JSX.E
       if (onlyViewColumns) {
         const onlyView =
           vm.selectedTable?.fields.filter(
-            (field) => vm.selectedView?.fieldNames.includes(field.logicalName) && !field.primaryKey
+            (field) => vm.selectedView?.fieldNames.includes(field.logicalName) && !field.primaryKey,
           ) || [];
         if (searchQuery && searchQuery.trim() !== "") {
           setFilteredColumns(
             onlyView.filter(
               (field) =>
                 field.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                field.logicalName.toLowerCase().includes(searchQuery.toLowerCase())
-            )
+                field.logicalName.toLowerCase().includes(searchQuery.toLowerCase()),
+            ),
           );
         } else {
           setFilteredColumns(onlyView);
@@ -129,8 +129,8 @@ export const UpdateAddField = observer((props: UpdateAddFieldProps): React.JSX.E
               (field) =>
                 !field.primaryKey &&
                 (field.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  field.logicalName.toLowerCase().includes(searchQuery.toLowerCase()))
-            )
+                  field.logicalName.toLowerCase().includes(searchQuery.toLowerCase())),
+            ),
           );
         } else {
           setFilteredColumns(vm.selectedTable?.fields.filter((field) => !field.primaryKey) || []);

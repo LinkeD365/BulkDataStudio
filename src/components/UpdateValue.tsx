@@ -1,7 +1,7 @@
 import React from "react";
 import { observer } from "mobx-react";
 
-import { SelectionValue, ViewModel } from "../model/ViewModel";
+import { SelectionValue, ViewModel } from "../model/vm";
 import { dvService } from "../utils/dataverseService";
 import { UpdateColumn } from "../model/UpdateColumn";
 import { Combobox, Option, Button, Label, Input, Checkbox } from "@fluentui/react-components";
