@@ -1,6 +1,7 @@
 name: Build & Publish to npm
 
 on:
+  workflow_dispatch: 
   push:
     branches: ["main"]
     paths-ignore:
@@ -31,9 +32,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
-        run: |
-          npm install -g npm@latest
-          npm ci
-          npm run build
-          npm publish --provenance
+      - name: "Setup pnpm"
+        uses: pnpm/action-setup@v4.2.0  
+        with:   # Version of pnpm to install
+          version: # optional
+    # Where to store pnpm files
+          dest: # optional, default is ~/setup-pnpm
+    # If specified, run `pnpm install`
+          run_install: # optional, default is null
+    # File path to the package.json to read "packageManager" configuration
+          package_json_file: # optional, default is package.json
+    # When set to true, @pnpm/exe, which is a Node.js bundled package, will be installed, enabling using pnpm without Node.js.
+          standalone: # optional, default is false
+          
