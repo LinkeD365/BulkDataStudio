@@ -22,7 +22,7 @@
     "repository": "https://github.com/LinkeD365/BulkDataStudio",
     "website": "https://linked365.blog",
     "readmeUrl": "https://raw.githubusercontent.com/LinkeD365/BulkDataStudio/refs/heads/main/README.md",
-    "iconUrl": "https://linked365.blog/linked365Logo.png"
+    "iconUrl": "https://raw.githubusercontent.com/LinkeD365/BulkDataStudio/refs/heads/main/smallIcon.png"
   },
   "scripts": {
     "build": "tsc && vite build",
