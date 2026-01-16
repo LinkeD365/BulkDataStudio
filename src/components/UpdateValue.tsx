@@ -161,7 +161,6 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
             updateColumn.column.type === "Owner") &&
             lookupSelection}
           <LookupDialog
-            connection={connection}
             dvSvc={dvSvc}
             vm={vm}
             updateField={updateColumn}

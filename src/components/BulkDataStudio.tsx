@@ -52,12 +52,12 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
   return (
     <div>
       {toolbar}
-      {vm.viewSelectorOpen && <ViewSelector connection={connection} dvSvc={dvSvc} vm={vm} onLog={onLog} />}
+      {vm.viewSelectorOpen && <ViewSelector dvSvc={dvSvc} vm={vm} onLog={onLog} />}
       <div style={{ height: "90vh" }}>
         <Allotment defaultSizes={[100, 200]}>
           <Allotment.Pane minSize={200}>
             <div>
-              <DataGrid connection={connection} dvSvc={dvSvc} vm={vm} utils={utils} onLog={onLog} />
+              <DataGrid connection={connection} vm={vm} utils={utils} />
             </div>
           </Allotment.Pane>
           <Allotment.Pane minSize={300}>
