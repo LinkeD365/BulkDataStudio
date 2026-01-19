@@ -21,24 +21,50 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
 
   const [lookupPopupOpen, setLookupPopupOpen] = React.useState<boolean>(false);
 
+  const onOptionSelected = (option: string) => {
+    const selected = selectValues.find((v) => v.value === option);
+    if (selected) {
+      updateColumn.selectedSelections = [selected];
+    }
+    if (updateColumn.column.type === "State") {
+      console.log("Selected state value:", selected);
+      const status = vm.updateCols.find((col) => col.column.logicalName === "statuscode");
+      console.log("Found status column:", status);
+      if (status && status.column) {
+        status.selectedSelections = [
+          status.column.choiceValues!.find((cv) => cv.value === selected?.defaultStatus?.toString())!,
+        ];
+      }
+    }
+  };
+
+  const setChoiceValues = () => {
+    if (updateColumn.column.type === "Status") {
+      const currentState = vm.updateCols.find((col) => col.column.logicalName === "statecode");
+      if (currentState?.selectedSelections && currentState.selectedSelections.length > 0)
+        setPicklistValues(
+          updateColumn.column.choiceValues!.filter(
+            (cv) => cv.parentState?.toString() === currentState?.selectedSelections?.[0]?.value,
+          ),
+        );
+      else setPicklistValues([]);
+    } else setPicklistValues(updateColumn.column.choiceValues || []);
+  };
   React.useEffect(() => {
     // Get choices
-
+    console.log("UpdateValue useEffect for column:", updateColumn.column.logicalName);
     const getFieldParameters = async () => {
       switch (updateColumn.column?.type) {
         case "Picklist":
         case "State":
         case "Status":
           if (updateColumn.column.choiceValues && updateColumn.column.choiceValues.length > 0) {
-            setPicklistValues(updateColumn.column.choiceValues);
+            setChoiceValues();
             return;
           }
-          const values = await dvSvc.getChoiceValues(
-            vm.selectedTable?.logicalName || "",
-            updateColumn.column.logicalName,
-          );
+          const values = await dvSvc.getChoiceValues(vm.selectedTable?.logicalName || "", updateColumn.column);
           updateColumn.column.choiceValues = values;
-          setPicklistValues(values);
+          setChoiceValues();
           // Initialize selected items from field.selectedValues if available
           break;
         case "Money":
@@ -55,7 +81,7 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
       }
     };
     getFieldParameters();
-  }, [updateColumn.column, dvSvc, vm.selectedTable?.logicalName]);
+  }, [updateColumn.column, dvSvc, vm.selectedTable?.logicalName, updateColumn.selectedSelections]);
 
   const pickList = (
     <Combobox
@@ -63,9 +89,9 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
       placeholder="Select Option"
       value={updateColumn.selectedSelections?.[0]?.label || ""}
       onOptionSelect={(_, data) => {
-        updateColumn.selectedSelections =
-          updateColumn.column.choiceValues?.filter((cv) => data.selectedOptions.includes(cv.value)) || [];
+        onOptionSelected(data.optionValue || "");
       }}
+      disabled={selectValues.length === 0}
     >
       {selectValues.map((value, index) => (
         <Option key={index} value={value.value}>

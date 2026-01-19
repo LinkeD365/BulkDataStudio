@@ -42,8 +42,9 @@ export class UpdateColumn {
     if (this.setStatus === "Fixed") {
       switch (this.column.type) {
         case "Lookup":
-        case "Owner":
           return `/${this.column.lookupTargetTable?.setName}(${this.selectedSelections?.[0].value})`;
+        case "Owner":
+          return `/${this.selectedSelections?.[0].ownerTable}(${this.selectedSelections?.[0].value})`;
         case "Picklist":
         case "State":
         case "Status":

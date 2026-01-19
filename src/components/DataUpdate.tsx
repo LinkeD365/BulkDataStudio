@@ -27,7 +27,7 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
   };
 
   function updateData(): void {
-    if (vm.updateFields.length === 0) {
+    if (vm.updateCols.length === 0) {
       window.toolboxAPI.utils.showNotification({
         title: "Incomplete Field Values",
         body: "No fields have been added to update. Please add fields before updating data.",
@@ -36,7 +36,7 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
       return;
     }
 
-    if (vm.updateFields.some((field) => field.isValid === false)) {
+    if (vm.updateCols.some((field) => field.isValid === false)) {
       window.toolboxAPI.utils.showNotification({
         title: "Incomplete Field Values",
         body: "Please provide values for all fields set to 'Fixed' before updating data.",
@@ -62,14 +62,14 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
                   onClick={() => {
                     setTouchDialogOpen(true);
                   }}
-                  disabled={vm.updateFields.length !== 0 || vm.selectedRows.length === 0}
+                  disabled={vm.updateCols.length !== 0 || vm.selectedRows.length === 0}
                 />
               </Tooltip>
               <Tooltip content="Update Data" relationship="label">
                 <Button
                   icon={<ArrowClockwiseFilled />}
                   onClick={updateData}
-                  disabled={vm.updateFields.length === 0 || vm.selectedRows.length === 0}
+                  disabled={vm.updateCols.length === 0 || vm.selectedRows.length === 0}
                 />
               </Tooltip>
 

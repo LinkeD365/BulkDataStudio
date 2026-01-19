@@ -58,17 +58,24 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
   }, [connection, utils, vm.selectedView]);
 
   const cols = React.useMemo(() => {
+    if (!vm.selectedView || !vm.selectedTable || vm.selectedTable.fields === undefined) {
+      return [];
+    }
     return (
       vm.selectedView?.fieldNames
         ?.filter((fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute)
         .map((fieldName) => {
           const field = vm.selectedTable?.fields.find((f) => f.logicalName === fieldName);
-          return {
-            headerName: field?.displayName || fieldName,
-            field: field?.dataName || fieldName,
-            flex: field?.logicalName === vm.selectedTable?.primaryNameAttribute ? 2 : 1,
-          };
-        }) || []
+          if (field) {
+            return {
+              headerName: field?.displayName || fieldName,
+              field: field?.dataName || fieldName,
+              flex: field?.logicalName === vm.selectedTable?.primaryNameAttribute || "" ? 2 : 1,
+              hide: field === null || field === undefined,
+            };
+          }
+        })
+        .filter((col) => col !== undefined) || []
     );
   }, [vm.selectedView, vm.selectedTable]);
 

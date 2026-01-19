@@ -45,25 +45,30 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   }, [vm.viewSelectorOpen, onLog]);
 
   React.useEffect(() => {
+    console.log("ViewSelector useEffect - selectedTable changed:", vm.selectedTable);
     const loadViews = async () => {
       if (vm.selectedTable) {
+        console.log(`Loading views for table: ${vm.selectedTable.displayName}`, "info");
         setViews([]);
 
         setViews(await dvSvc.getViews(vm.selectedTable));
       }
+      console.log("Loaded views:", views);
     };
     loadViews();
   }, [vm.selectedTable]);
 
   React.useEffect(() => {
+    console.log("ViewSelector useEffect2 - selectedTable changed:", vm.selectedTable);
     const loadTableMeta = async () => {
       if (vm.selectedTable) {
-        onLog(`Loading metadata for table: ${vm.selectedTable.displayName}`, "info");
+        console.log(`Loading metadata for table: ${vm.selectedTable.displayName}`, "info");
         if (!vm.selectedTable.fields || vm.selectedTable.fields.length === 0) {
           const fields = await dvSvc.getFields(vm.selectedTable.logicalName);
           vm.selectedTable.fields = fields;
-          onLog(`Loaded ${fields.length} fields for table: ${vm.selectedTable.displayName}`, "success");
+          console.log(`Loaded ${fields.length} fields for table: ${vm.selectedTable.displayName}`, "success");
         }
+        console.log("Table metadata loaded:", vm.selectedTable);
       }
     };
     loadTableMeta();
@@ -89,7 +94,9 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   };
 
   const onViewSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
+    console.log("Selected view:", data.optionValue);
     setLocalSelectedView(views.find((view) => view.id === (data.optionValue as string))!);
+    console.log("localSelectedView set to:", localSelectedView?.label);
   };
 
   const openSelectedView = () => {
@@ -111,10 +118,12 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
           <div>
             <Field label="Table">
               <Combobox
+                clearable
                 disabled={vm.tables.length === 0}
                 onOptionSelect={onTableSelect}
                 placeholder="Select a table"
                 value={query}
+                selectedOptions={vm.selectedTable ? [vm.selectedTable.logicalName] : []}
                 onChange={(ev) => setQuery(ev.target.value)}
               >
                 {children}
