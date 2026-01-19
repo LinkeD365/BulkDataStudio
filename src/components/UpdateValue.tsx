@@ -27,32 +27,37 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
       updateColumn.selectedSelections = [selected];
     }
     if (updateColumn.column.type === "State") {
-      console.log("Selected state value:", selected);
       const status = vm.updateCols.find((col) => col.column.logicalName === "statuscode");
-      console.log("Found status column:", status);
-      if (status && status.column) {
-        status.selectedSelections = [
-          status.column.choiceValues!.find((cv) => cv.value === selected?.defaultStatus?.toString())!,
-        ];
+      const defaultStatusValue = selected?.defaultStatus?.toString();
+      if (status && status.column && status.column.choiceValues && defaultStatusValue !== undefined) {
+        const matchingStatus = status.column.choiceValues.find((cv) => cv.value === defaultStatusValue);
+        if (matchingStatus) {
+          status.selectedSelections = [matchingStatus];
+        }
       }
     }
   };
 
   const setChoiceValues = () => {
+    const choices = updateColumn.column.choiceValues || [];
     if (updateColumn.column.type === "Status") {
       const currentState = vm.updateCols.find((col) => col.column.logicalName === "statecode");
-      if (currentState?.selectedSelections && currentState.selectedSelections.length > 0)
+      if (currentState?.selectedSelections && currentState.selectedSelections.length > 0) {
         setPicklistValues(
-          updateColumn.column.choiceValues!.filter(
-            (cv) => cv.parentState?.toString() === currentState?.selectedSelections?.[0]?.value,
+          choices.filter(
+            (cv) => cv.parentState?.toString() === currentState!.selectedSelections![0]?.value,
           ),
         );
-      else setPicklistValues([]);
-    } else setPicklistValues(updateColumn.column.choiceValues || []);
+      } else {
+        setPicklistValues([]);
+      }
+    } else {
+      setPicklistValues(choices);
+    }
   };
+
   React.useEffect(() => {
     // Get choices
-    console.log("UpdateValue useEffect for column:", updateColumn.column.logicalName);
     const getFieldParameters = async () => {
       switch (updateColumn.column?.type) {
         case "Picklist":
@@ -81,7 +86,7 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
       }
     };
     getFieldParameters();
-  }, [updateColumn.column, dvSvc, vm.selectedTable?.logicalName, updateColumn.selectedSelections]);
+  }, [updateColumn.column, dvSvc, vm.selectedTable?.logicalName]);
 
   const pickList = (
     <Combobox
