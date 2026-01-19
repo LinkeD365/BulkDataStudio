@@ -35,7 +35,24 @@ export class dvService {
           "EntitySetName",
         ])
         .then((entities) => {
-          return entities.value
+          const filteredOut = entities.value.filter((entity: any) => !entity.PrimaryNameAttribute);
+          if (filteredOut.length > 0) {
+            const logicalNames = filteredOut
+              .map((entity: any) => entity.LogicalName)
+              .filter((name: any) => typeof name === "string")
+              .join(", ");
+            this.onLog(
+              `Filtered out ${filteredOut.length} entities without PrimaryNameAttribute` +
+                (logicalNames ? `: ${logicalNames}` : ""),
+              "warning",
+            );
+          }
+
+          const entitiesWithPrimaryName = entities.value.filter(
+            (entity: any) => entity.PrimaryNameAttribute,
+          );
+
+          return entitiesWithPrimaryName
             .map(
               (entity: any) =>
                 ({
@@ -65,7 +82,7 @@ export class dvService {
     }
 
     try {
-      this.onLog("Loading tables from Dataverse...", "info");
+      console.log("Loading views from Dataverse...", table);
       const fetchXml = [
         "<fetch>",
         "  <entity name='savedquery'>",
@@ -90,7 +107,7 @@ export class dvService {
             fetchXml: rec.fetchxml ?? rec.fetchXml ?? "",
           }) as View,
       );
-      this.onLog(`Loaded ${views.length} user views`, "success");
+      console.log(`Loaded ${views.length} user views`, table, "success");
 
       return views;
     } catch (error) {
@@ -126,14 +143,9 @@ export class dvService {
     }
 
     try {
-      const metadata = await this.dvApi.getEntityRelatedMetadata(tableLogicalName, "Attributes", [
-        "LogicalName",
-        "DisplayName",
-        "AttributeType",
-        "IsPrimaryId",
-      ]);
-
-      const fields = (Array.isArray(metadata?.value) ? metadata.value : [])
+      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes?$select=LogicalName,DisplayName,AttributeType,IsPrimaryId&$filter=IsValidForUpdate eq true`;
+      const metadataAlt: any = await this.dvApi.queryData(url);
+      const fields = (Array.isArray(metadataAlt?.value) ? metadataAlt.value : [])
         .map(
           (attr: any) =>
             new Column(
@@ -153,22 +165,39 @@ export class dvService {
     }
   }
 
-  async getChoiceValues(tableLogicalName: string, fieldLogicalName: string): Promise<SelectionValue[]> {
+  async getChoiceValues(tableLogicalName: string, column: Column): Promise<SelectionValue[]> {
     if (!this.connection) {
       this.onLog("No connection available", "error");
       throw new Error("No connection available");
     }
     try {
-      this.onLog(`Loading picklist values for field: ${fieldLogicalName}`, "info");
-      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${fieldLogicalName}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName&$expand=OptionSet`;
+      this.onLog(`Loading picklist values for field: ${column.logicalName}`, "info");
+      let attributeMeta: string;
+      switch (column.type) {
+        case "Picklist":
+          attributeMeta = "PicklistAttributeMetadata";
+          break;
+        case "State":
+          attributeMeta = "StateAttributeMetadata";
+          break;
+        case "Status":
+          attributeMeta = "StatusAttributeMetadata";
+          break;
+        default:
+          throw new Error(`Field type ${column.type} is not supported for choice values retrieval`);
+      }
+
+      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${column.logicalName}')/Microsoft.Dynamics.CRM.${attributeMeta}?$select=LogicalName&$expand=OptionSet`;
 
       const picklistMeta: any = await this.dvApi.queryData(url);
 
       const options = picklistMeta.OptionSet?.Options || [];
-      const values: SelectionValue[] = options.map(
-        (opt: any) => new SelectionValue(opt.Label?.UserLocalizedLabel?.Label || "", opt.Value.toString()),
-      );
-      this.onLog(`Picklist values loaded for field: ${fieldLogicalName}`, "success");
+      const values: SelectionValue[] = options.map((opt: any) => ({
+        label: opt.Label?.UserLocalizedLabel?.Label || "",
+        value: opt.Value.toString(),
+        defaultStatus: opt.DefaultStatus,
+        parentState: opt.State,
+      }));
       return values;
     } catch (error) {
       this.onLog(`Error loading picklist values: ${error}`, "error");

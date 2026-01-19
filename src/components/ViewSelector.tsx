@@ -58,11 +58,9 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   React.useEffect(() => {
     const loadTableMeta = async () => {
       if (vm.selectedTable) {
-        onLog(`Loading metadata for table: ${vm.selectedTable.displayName}`, "info");
         if (!vm.selectedTable.fields || vm.selectedTable.fields.length === 0) {
           const fields = await dvSvc.getFields(vm.selectedTable.logicalName);
           vm.selectedTable.fields = fields;
-          onLog(`Loaded ${fields.length} fields for table: ${vm.selectedTable.displayName}`, "success");
         }
       }
     };
@@ -111,10 +109,12 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
           <div>
             <Field label="Table">
               <Combobox
+                clearable
                 disabled={vm.tables.length === 0}
                 onOptionSelect={onTableSelect}
                 placeholder="Select a table"
                 value={query}
+                selectedOptions={vm.selectedTable ? [vm.selectedTable.logicalName] : []}
                 onChange={(ev) => setQuery(ev.target.value)}
               >
                 {children}

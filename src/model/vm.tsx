@@ -8,7 +8,7 @@ export class ViewModel {
   selectedView?: View;
   updateFieldAddOpen: boolean = false;
   selectedRows: SelectionValue[] = [];
-  updateFields: UpdateColumn[] = [];
+  updateCols: UpdateColumn[] = [];
   data?: Array<any>;
   constructor() {
     makeAutoObservable(this);
@@ -33,7 +33,7 @@ export class Table {
     typeCode: number,
     primaryIdAttribute: string,
     primaryNameAttribute: string,
-    setName: string
+    setName: string,
   ) {
     this.logicalName = logicalName;
     this.displayName = displayName;
@@ -92,6 +92,9 @@ export class Column {
 export class SelectionValue {
   label: string;
   value: string;
+  defaultStatus?: number;
+  parentState?: number;
+  ownerTable?: string;
   constructor(label: string, value: string) {
     this.label = label;
     this.value = value;

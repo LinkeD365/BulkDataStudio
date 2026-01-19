@@ -80,7 +80,7 @@ export const UpdateAddField = observer((props: UpdateAddFieldProps): React.JSX.E
   );
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [selectedItems, setSelectedItems] = React.useState<SelectionItemId[]>(
-    vm.updateFields.map((uf) => uf.column.logicalName),
+    vm.updateCols.map((uf) => uf.column.logicalName),
   );
 
   React.useEffect(() => {
@@ -95,12 +95,32 @@ export const UpdateAddField = observer((props: UpdateAddFieldProps): React.JSX.E
     const updateItems: UpdateColumn[] = [];
     selectedItems.forEach((itemId) => {
       const field = vm.selectedTable?.fields.find((f) => f.logicalName === itemId);
-      if (field && !vm.updateFields.some((f) => f.column.logicalName === field.logicalName)) {
+      if (field && !vm.updateCols.some((f) => f.column.logicalName === field.logicalName)) {
         utils.getColumnAttributes(field);
         updateItems.push(new UpdateColumn(field));
-      } else updateItems.push(vm.updateFields.find((f) => f.column.logicalName === itemId)!);
+        if (
+          field.type === "State" &&
+          !updateItems.some((f) => f.column.logicalName === "statuscode") &&
+          !vm.updateCols.some((f) => f.column.logicalName === "statuscode")
+        ) {
+          const statusField = vm.selectedTable?.fields.find((f) => f.logicalName === "statuscode");
+          if (statusField) {
+            updateItems.push(new UpdateColumn(statusField));
+          }
+        }
+        if (
+          field.type === "Status" &&
+          !updateItems.some((f) => f.column.logicalName === "statecode") &&
+          !vm.updateCols.some((f) => f.column.logicalName === "statecode")
+        ) {
+          const statusField = vm.selectedTable?.fields.find((f) => f.logicalName === "statecode");
+          if (statusField) {
+            updateItems.push(new UpdateColumn(statusField));
+          }
+        }
+      } else updateItems.push(vm.updateCols.find((f) => f.column.logicalName === itemId)!);
     });
-    vm.updateFields = updateItems;
+    vm.updateCols = updateItems;
     vm.updateFieldAddOpen = false;
   }
 

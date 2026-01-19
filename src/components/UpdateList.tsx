@@ -19,6 +19,7 @@ import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
 import { SetStatus, UpdateColumn } from "../model/UpdateColumn";
 
 import { UpdateValue } from "./UpdateValue";
+import { Combobox, Option } from "@fluentui/react-components";
 
 ModuleRegistry.registerModules([
   TextFilterModule,
@@ -63,9 +64,26 @@ export const UpdateList = observer((props: UpdateListProps): React.JSX.Element =
     {
       field: "setStatus",
       headerName: "Action",
-      cellEditor: "agSelectCellEditor",
-      cellEditorParams: { values: SetStatus },
-      editable: true,
+      cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) => {
+        const updateCol = params.data;
+        if (!updateCol) return null;
+        return (
+          <Combobox
+            value={updateCol.setStatus}
+            onOptionSelect={(_, data) => {
+              updateCol.setStatus = data.optionValue as string;
+            }}
+            disabled={updateCol.column.type === "Status" || updateCol.column.type === "State"}
+          >
+            {SetStatus.map((option, index) => (
+              <Option key={index} value={option}>
+                {option}
+              </Option>
+            ))}
+          </Combobox>
+        );
+      },
+
       singleClickEdit: true,
     },
     { field: "onlyDifferent", headerName: "Only If Different", editable: true, cellEditor: "agCheckboxCellEditor" },
@@ -75,7 +93,7 @@ export const UpdateList = observer((props: UpdateListProps): React.JSX.Element =
     <div style={{ width: "100%", height: "80vh", flexBasis: 0 }}>
       <AgGridReact<UpdateColumn>
         theme={agTheme}
-        rowData={vm.updateFields || []}
+        rowData={vm.updateCols || []}
         defaultColDef={defaultColDef}
         columnDefs={cols}
         debug={true}

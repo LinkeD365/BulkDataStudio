@@ -1,7 +1,7 @@
 import React from "react";
 
 import { observer } from "mobx-react";
-import { SelectionValue, View, ViewModel } from "../model/vm";
+import { SelectionValue, Table, View, ViewModel } from "../model/vm";
 import { dvService } from "../utils/dataverseService";
 import {
   Dialog,
@@ -48,6 +48,8 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
   const [localSelectedView, setLocalSelectedView] = React.useState<View>();
   const [localSelectionValue, setLocalSelectionValue] = React.useState<SelectionValue>();
   const [data, setData] = React.useState<Array<any>>([]);
+  const [ownerType, setOwnerType] = React.useState<string>("User");
+  const [ownerTable, setOwnerTable] = React.useState<Table>();
 
   React.useEffect(() => {
     const loadViews = async () => {
@@ -71,10 +73,30 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
           .catch((error) => {
             onLog(`Error loading lookup target table: ${error.message}`, "error");
           });
+      } else if (updateField.column.type === "Owner") {
+        setLocalSelectedView(undefined);
+        let localOwnerTable: Table | undefined;
+        if (ownerType === "User") {
+          localOwnerTable = vm.tables.find((t) => t.logicalName === "systemuser");
+          setOwnerTable(localOwnerTable);
+        } else if (ownerType === "Team") {
+          localOwnerTable = vm.tables.find((t) => t.logicalName === "team");
+          setOwnerTable(localOwnerTable);
+        }
+        if (localOwnerTable && !localOwnerTable.views) {
+          await dvSvc.getViews(localOwnerTable).then((views) => {
+            localOwnerTable.views = views;
+          });
+        }
+        if (localOwnerTable && !localOwnerTable.fields) {
+          await dvSvc.getFields(localOwnerTable.logicalName).then((fields) => {
+            localOwnerTable.fields = fields;
+          });
+        }
       }
     };
     loadViews();
-  }, [dialogOpen]);
+  }, [dialogOpen, ownerType]);
 
   React.useEffect(() => {
     const loadData = async () => {
@@ -101,29 +123,56 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
     loadViewMeta();
   }, [localSelectedView]);
 
-  const viewsList = (updateField.column.lookupTargetTable?.views ?? []).map((view) => (
-    <Option key={view.id} value={view.id}>
-      {view.label}
-    </Option>
-  ));
+  const viewsList =
+    updateField.column.type === "Owner"
+      ? (ownerTable?.views ?? []).map((view) => (
+          <Option key={view.id} value={view.id}>
+            {view.label}
+          </Option>
+        ))
+      : (updateField.column.lookupTargetTable?.views ?? []).map((view) => (
+          <Option key={view.id} value={view.id}>
+            {view.label}
+          </Option>
+        ));
 
   const onViewSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
-    setLocalSelectedView(
-      updateField.column.lookupTargetTable!.views!.find((view) => view.id === (data.optionValue as string))!,
-    );
+    if (updateField.column.type === "Owner") {
+      setLocalSelectedView(ownerTable!.views!.find((view) => view.id === (data.optionValue as string))!);
+    } else {
+      setLocalSelectedView(
+        updateField.column.lookupTargetTable!.views!.find((view) => view.id === (data.optionValue as string))!,
+      );
+    }
   };
 
   const cols = React.useMemo(() => {
-    return (
-      localSelectedView?.fieldNames?.map((fieldName) => {
-        const field = updateField.column.lookupTargetTable!.fields.find((f) => f.logicalName === fieldName);
+    if (updateField.column.type === "Owner" && !ownerTable) {
+      return [];
+    }
+    if (updateField.column.type === "Owner") {
+      return (
+        localSelectedView?.fieldNames?.map((fieldName) => {
+          const field = ownerTable!.fields.find((f) => f.logicalName === fieldName);
 
-        return {
-          headerName: field?.displayName || fieldName,
-          field: fieldName,
-        };
-      }) || []
-    );
+          return {
+            headerName: field?.displayName || fieldName,
+            field: fieldName,
+          };
+        }) || []
+      );
+    } else {
+      return (
+        localSelectedView?.fieldNames?.map((fieldName) => {
+          const field = updateField.column.lookupTargetTable!.fields.find((f) => f.logicalName === fieldName);
+
+          return {
+            headerName: field?.displayName || fieldName,
+            field: fieldName,
+          };
+        }) || []
+      );
+    }
   }, [localSelectedView?.fieldNames]);
   const defaultColDef: ColDef = {
     sortable: true,
@@ -143,10 +192,17 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
   function lookupSelected(event: SelectionChangedEvent): void {
     const selectedRows = event.api.getSelectedRows();
     if (selectedRows.length > 0) {
-      setLocalSelectionValue({
-        label: selectedRows[0][updateField.column.lookupTargetTable?.primaryNameAttribute!],
-        value: selectedRows[0][updateField.column.lookupTargetTable?.primaryIdAttribute!],
-      });
+      if (updateField.column.type === "Owner") {
+        setLocalSelectionValue({
+          label: selectedRows[0][ownerTable?.primaryNameAttribute!],
+          value: selectedRows[0][ownerTable?.primaryIdAttribute!],
+          ownerTable: ownerTable?.setName,
+        });
+      } else
+        setLocalSelectionValue({
+          label: selectedRows[0][updateField.column.lookupTargetTable?.primaryNameAttribute!],
+          value: selectedRows[0][updateField.column.lookupTargetTable?.primaryIdAttribute!],
+        });
     } else setLocalSelectionValue(undefined);
   }
   async function selectRecord(_: React.MouseEvent<HTMLButtonElement>): Promise<void> {
@@ -162,8 +218,19 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
       <DialogSurface>
         <DialogBody>
           <DialogTitle>Select a Lookup Value</DialogTitle>
-
           <DialogContent>
+            {updateField.column.type === "Owner" && (
+              <Field label="Owner type">
+                <Combobox
+                  placeholder="Select Owner Type"
+                  value={ownerType}
+                  onOptionSelect={(_, data) => setOwnerType(data.optionValue as string)}
+                >
+                  <Option>User</Option>
+                  <Option>Team</Option>
+                </Combobox>
+              </Field>
+            )}
             <Field label="Select a view">
               <Combobox placeholder="Select a View" onOptionSelect={onViewSelect}>
                 {viewsList}

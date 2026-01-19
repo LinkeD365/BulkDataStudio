@@ -52,7 +52,7 @@ export class utilService {
         case "Status":
           if (!column.choiceValues || column.choiceValues.length === 0) {
             await this.dvSvc
-              .getChoiceValues(tableLogicalName || this.vm.selectedTable?.logicalName || "", column.logicalName)
+              .getChoiceValues(tableLogicalName || this.vm.selectedTable?.logicalName || "", column)
               .then((values) => {
                 column.choiceValues = values;
                 resolve();

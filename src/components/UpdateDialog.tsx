@@ -30,7 +30,7 @@ export const UpdateDialog = observer((props: UpdateDialogProps): React.JSX.Eleme
   const updateData = async () => {
     setUpdatingData(true);
     await dvSvc
-      .updateData(vm.selectedTable!, vm.selectedRows, vm.updateFields)
+      .updateData(vm.selectedTable!, vm.selectedRows, vm.updateCols)
       .then(async () => {
         onLog("Records updated successfully", "success");
         window.toolboxAPI.utils.showNotification({
