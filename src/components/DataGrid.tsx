@@ -70,8 +70,7 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
             return {
               headerName: field?.displayName || fieldName,
               field: field?.dataName || fieldName,
-              flex: field?.logicalName === vm.selectedTable?.primaryNameAttribute || "" ? 2 : 1,
-              hide: field === null || field === undefined,
+              flex: field?.logicalName === vm.selectedTable?.primaryNameAttribute ? 2 : 1,
             };
           }
         })

@@ -98,13 +98,25 @@ export const UpdateAddField = observer((props: UpdateAddFieldProps): React.JSX.E
       if (field && !vm.updateCols.some((f) => f.column.logicalName === field.logicalName)) {
         utils.getColumnAttributes(field);
         updateItems.push(new UpdateColumn(field));
-        if (field.type === "State" && !updateItems.some((f) => f.column.logicalName === "statuscode")) {
+        if (
+          field.type === "State" &&
+          !updateItems.some((f) => f.column.logicalName === "statuscode") &&
+          !vm.updateCols.some((f) => f.column.logicalName === "statuscode")
+        ) {
           const statusField = vm.selectedTable?.fields.find((f) => f.logicalName === "statuscode");
-          updateItems.push(new UpdateColumn(statusField!));
+          if (statusField) {
+            updateItems.push(new UpdateColumn(statusField));
+          }
         }
-        if (field.type === "Status" && !updateItems.some((f) => f.column.logicalName === "statecode")) {
+        if (
+          field.type === "Status" &&
+          !updateItems.some((f) => f.column.logicalName === "statecode") &&
+          !vm.updateCols.some((f) => f.column.logicalName === "statecode")
+        ) {
           const statusField = vm.selectedTable?.fields.find((f) => f.logicalName === "statecode");
-          updateItems.push(new UpdateColumn(statusField!));
+          if (statusField) {
+            updateItems.push(new UpdateColumn(statusField));
+          }
         }
       } else updateItems.push(vm.updateCols.find((f) => f.column.logicalName === itemId)!);
     });

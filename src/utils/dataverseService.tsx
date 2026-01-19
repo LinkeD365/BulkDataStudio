@@ -35,8 +35,24 @@ export class dvService {
           "EntitySetName",
         ])
         .then((entities) => {
-          return entities.value
-            .filter((entity: any) => entity.PrimaryNameAttribute)
+          const filteredOut = entities.value.filter((entity: any) => !entity.PrimaryNameAttribute);
+          if (filteredOut.length > 0) {
+            const logicalNames = filteredOut
+              .map((entity: any) => entity.LogicalName)
+              .filter((name: any) => typeof name === "string")
+              .join(", ");
+            this.onLog(
+              `Filtered out ${filteredOut.length} entities without PrimaryNameAttribute` +
+                (logicalNames ? `: ${logicalNames}` : ""),
+              "warning",
+            );
+          }
+
+          const entitiesWithPrimaryName = entities.value.filter(
+            (entity: any) => entity.PrimaryNameAttribute,
+          );
+
+          return entitiesWithPrimaryName
             .map(
               (entity: any) =>
                 ({
@@ -127,13 +143,6 @@ export class dvService {
     }
 
     try {
-      // const metadata = await this.dvApi.getEntityRelatedMetadata(tableLogicalName, "Attributes", [
-      //   "LogicalName",
-      //   "DisplayName",
-      //   "AttributeType",
-      //   "IsPrimaryId",
-      // ]);
-
       const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes?$select=LogicalName,DisplayName,AttributeType,IsPrimaryId&$filter=IsValidForUpdate eq true`;
       const metadataAlt: any = await this.dvApi.queryData(url);
       const fields = (Array.isArray(metadataAlt?.value) ? metadataAlt.value : [])
@@ -162,23 +171,23 @@ export class dvService {
       throw new Error("No connection available");
     }
     try {
-      this.onLog(`Loading picklist values for field: ${column}`, "info");
-      let attribueMeta: string;
+      this.onLog(`Loading picklist values for field: ${column.logicalName}`, "info");
+      let attributeMeta: string;
       switch (column.type) {
         case "Picklist":
-          attribueMeta = "PicklistAttributeMetadata";
+          attributeMeta = "PicklistAttributeMetadata";
           break;
         case "State":
-          attribueMeta = "StateAttributeMetadata";
+          attributeMeta = "StateAttributeMetadata";
           break;
         case "Status":
-          attribueMeta = "StatusAttributeMetadata";
+          attributeMeta = "StatusAttributeMetadata";
           break;
         default:
           throw new Error(`Field type ${column.type} is not supported for choice values retrieval`);
       }
 
-      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${column.logicalName}')/Microsoft.Dynamics.CRM.${attribueMeta}?$select=LogicalName&$expand=OptionSet`;
+      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${column.logicalName}')/Microsoft.Dynamics.CRM.${attributeMeta}?$select=LogicalName&$expand=OptionSet`;
 
       const picklistMeta: any = await this.dvApi.queryData(url);
 
@@ -189,7 +198,6 @@ export class dvService {
         defaultStatus: opt.DefaultStatus,
         parentState: opt.State,
       }));
-      console.log(values);
       return values;
     } catch (error) {
       this.onLog(`Error loading picklist values: ${error}`, "error");

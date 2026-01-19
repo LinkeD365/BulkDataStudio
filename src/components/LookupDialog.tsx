@@ -151,7 +151,6 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
       return [];
     }
     if (updateField.column.type === "Owner") {
-      console.log("Defining columns for Owner lookup, selectedView:", localSelectedView, ownerTable);
       return (
         localSelectedView?.fieldNames?.map((fieldName) => {
           const field = ownerTable!.fields.find((f) => f.logicalName === fieldName);
@@ -163,7 +162,6 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
         }) || []
       );
     } else {
-      console.log("Defining columns for Owner lookup, selectedView2:", localSelectedView, ownerTable);
       return (
         localSelectedView?.fieldNames?.map((fieldName) => {
           const field = updateField.column.lookupTargetTable!.fields.find((f) => f.logicalName === fieldName);
