@@ -94,7 +94,7 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
   }, []);
   return (
     <>
-      {vm.data && vm.data.length > 0 && (
+      {vm.data && vm.data.length > 0 ? (
         <div style={{ width: "100%", height: "94vh" }}>
           <AgGridReact
             suppressFieldDotNotation
@@ -107,8 +107,9 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
             onSelectionChanged={rowSelected}
           />
         </div>
-      )}{" "}
-      : <div style={{ padding: "20px" }}>No data to display. Please select "Fetch Data" to load data.</div>
+      ) : (
+        <div style={{ padding: "20px" }}>No data to display. Please select "Fetch Data" to load data.</div>
+      )}
     </>
   );
 });

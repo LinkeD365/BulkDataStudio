@@ -72,41 +72,39 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
       return;
     }
 
-    try {
-      const config = {
-        table: {
-          logicalName: vm.selectedTable.logicalName,
-        },
-        updateColumns: vm.updateCols.map((col) => ({
-          columnName: col.column.logicalName,
-          setStatus: col.setStatus,
-          onlyDifferent: col.onlyDifferent,
-          newValue: col.newValue,
-          selectedSelections: col.selectedSelections,
-        })),
-      };
-      console.log("Saving configuration:", config);
+    const config = {
+      table: {
+        logicalName: vm.selectedTable.logicalName,
+      },
+      updateColumns: vm.updateCols.map((col) => ({
+        columnName: col.column.logicalName,
+        setStatus: col.setStatus,
+        onlyDifferent: col.onlyDifferent,
+        newValue: col.newValue,
+        selectedSelections: col.selectedSelections,
+      })),
+    };
+    onLog("Saving configuration...", "info");
 
-      await window.toolboxAPI.fileSystem
-        .saveFile(`${vm.selectedTable.logicalName}-BulkConfig.json`, JSON.stringify(config, null, 2))
-        .then(() => {
-          onLog("Configuration saved successfully", "success");
-          window.toolboxAPI.utils.showNotification({
-            title: "Configuration Saved",
-            body: "Configuration has been saved successfully.",
-            type: "success",
-          });
-        })
-        .catch((error) => {
-          onLog(`Error saving configuration: ${error}`, "error");
-          window.toolboxAPI.utils.showNotification({
-            title: "Error Saving Configuration",
-            body: `An error occurred while saving the configuration: ${error}`,
-            type: "error",
-          });
-        });
+    try {
+      await window.toolboxAPI.fileSystem.saveFile(
+        `${vm.selectedTable.logicalName}-BulkConfig.json`,
+        JSON.stringify(config, null, 2)
+      );
+
+      onLog("Configuration saved successfully", "success");
+      window.toolboxAPI.utils.showNotification({
+        title: "Configuration Saved",
+        body: "Configuration has been saved successfully.",
+        type: "success",
+      });
     } catch (error) {
       onLog(`Error saving configuration: ${error}`, "error");
+      window.toolboxAPI.utils.showNotification({
+        title: "Error Saving Configuration",
+        body: `An error occurred while saving the configuration: ${error}`,
+        type: "error",
+      });
     }
   }
 
@@ -122,13 +120,28 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
       });
 
       if (filePath) {
-        console.log("Selected file:", filePath);
+        onLog(`Selected configuration file: ${filePath}`, "info");
         // Read the selected file
         const content = await window.toolboxAPI.fileSystem.readText(filePath);
-        console.log("File content:", content);
+        onLog("Reading configuration file...", "info");
 
         const config = JSON.parse(content);
-        console.log("Loading configuration:", config);
+        
+        // Validate the configuration structure
+        if (!config || typeof config !== "object") {
+          throw new Error("Invalid configuration: Configuration must be an object");
+        }
+        if (!config.table || typeof config.table !== "object") {
+          throw new Error("Invalid configuration: Missing or invalid 'table' property");
+        }
+        if (!config.table.logicalName || typeof config.table.logicalName !== "string") {
+          throw new Error("Invalid configuration: Missing or invalid 'table.logicalName' property");
+        }
+        if (!config.updateColumns || !Array.isArray(config.updateColumns)) {
+          throw new Error("Invalid configuration: Missing or invalid 'updateColumns' array");
+        }
+        
+        onLog("Configuration structure validated", "info");
 
         // Find the table by logical name
         if (vm.tables.length === 0) {
@@ -164,20 +177,59 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
         const updateCols: UpdateColumn[] = [];
         // Recreate update columns from config
         for (const colConfig of config.updateColumns) {
+          if (!colConfig.columnName || typeof colConfig.columnName !== "string") {
+            onLog(`Skipping invalid column configuration: missing or invalid columnName`, "warning");
+            continue;
+          }
+          
           const column = table.fields.find((f) => f.logicalName === colConfig.columnName);
           if (column) {
             const updateCol = new UpdateColumn(column);
-            updateCol.setStatus = colConfig.setStatus;
-            updateCol.onlyDifferent = colConfig.onlyDifferent;
+            updateCol.setStatus = colConfig.setStatus || "Fixed";
+            updateCol.onlyDifferent = colConfig.onlyDifferent || false;
             updateCol.newValue = colConfig.newValue;
             updateCol.selectedSelections = colConfig.selectedSelections;
+            
+            // Load metadata for lookup and choice fields
+            if (column.type === "Lookup" && !column.lookupTargetTable) {
+              try {
+                const lookupTable = await dvSvc.getLookupTargetTable(
+                  vm.selectedTable.logicalName,
+                  column.logicalName
+                );
+                column.lookupTargetTable = vm.tables.find((t) => t.logicalName === lookupTable);
+                
+                if (column.lookupTargetTable && !column.lookupTargetTable.views) {
+                  const views = await dvSvc.getViews(column.lookupTargetTable);
+                  column.lookupTargetTable.views = views;
+                }
+                if (column.lookupTargetTable && !column.lookupTargetTable.fields) {
+                  const fields = await dvSvc.getFields(column.lookupTargetTable.logicalName);
+                  column.lookupTargetTable.fields = fields;
+                }
+              } catch (error) {
+                onLog(`Error loading lookup metadata for field ${column.logicalName}: ${error}`, "warning");
+              }
+            } else if (
+              (column.type === "Picklist" || column.type === "State" || column.type === "Status") &&
+              (!column.choiceValues || column.choiceValues.length === 0)
+            ) {
+              try {
+                const values = await dvSvc.getChoiceValues(vm.selectedTable.logicalName, column);
+                column.choiceValues = values;
+              } catch (error) {
+                onLog(`Error loading choice values for field ${column.logicalName}: ${error}`, "warning");
+              }
+            }
+            
             updateCols.push(updateCol);
+          } else {
+            onLog(`Field "${colConfig.columnName}" not found in table "${table.logicalName}"`, "warning");
           }
         }
 
         vm.updateCols = updateCols;
-        console.log("Configuration loaded into ViewModel:", vm);
-        onLog("Configuration loaded successfully", "success");
+        onLog(`Configuration loaded successfully with ${updateCols.length} fields`, "success");
         window.toolboxAPI.utils.showNotification({
           title: "Configuration Loaded",
           body: "Configuration has been loaded successfully.",
@@ -232,7 +284,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
               onClick={() => {
                 vm.updateFieldAddOpen = true;
               }}
-              disabled={!vm.selectedView}
+              disabled={!vm.selectedTable}
             >
               Add Config
             </Button>
@@ -261,7 +313,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
             <Button
               icon={<DeleteFilled />}
               onClick={() => {
-                vm.deleteDialogOpen = !vm.deleteDialogOpen;
+                vm.deleteDialogOpen = true;
               }}
               disabled={vm.selectedRows.length === 0}
             />
