@@ -491,16 +491,14 @@ export class dvService {
       this.onLog(`Deleting ${rows.length} records from table: ${table.displayName}`, "info");
 
       try {
-        await window.toolboxAPI.utils.executeParallel(() =>
-          Promise.all(
-            batches.map(async (batch) => {
-              await Promise.all(
-                batch.map(async (row) => {
-                  await this.dvApi.delete(table.logicalName, row.value);
-                }),
-              );
-            }),
-          ),
+        await Promise.all(
+          batches.map(async (batch) => {
+            await Promise.all(
+              batch.map(async (row) => {
+                await this.dvApi.delete(table.logicalName, row.value);
+              }),
+            );
+          }),
         );
 
         this.onLog(`Successfully deleted ${rows.length} records`, "success");

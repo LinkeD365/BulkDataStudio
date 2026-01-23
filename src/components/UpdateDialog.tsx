@@ -202,8 +202,7 @@ export const DeleteDialog = observer((props: UpdateDialogProps): React.JSX.Eleme
           <DialogBody>
             <DialogContent>
               <p>
-                {`${vm.selectedRows.length} records on the ${vm.selectedTable?.displayName} table 
-              will be permanently deleted.`}
+                {`${vm.selectedRows.length} records on the ${vm.selectedTable?.displayName} table will be permanently deleted.`}
               </p>
               <p style={{ fontWeight: "bold", color: "red" }}>This action cannot be undone!</p>
               <p>Confirm deletion!</p>
