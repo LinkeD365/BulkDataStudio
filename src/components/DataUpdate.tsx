@@ -40,14 +40,14 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
           onDialogClose={() => (vm.touchDialogOpen = false)}
         />
       )}
-      {deleteDialogOpen && (
+      {vm.deleteDialogOpen && (
         <DeleteDialog
           dvSvc={dvSvc}
           vm={vm}
           utils={utils}
           onLog={onLog}
-          updateOpen={deleteDialogOpen}
-          onDialogClose={() => setDeleteDialogOpen(false)}
+          updateOpen={vm.deleteDialogOpen}
+          onDialogClose={() => (vm.deleteDialogOpen = false)}
         />
       )}
     </div>
