@@ -91,7 +91,7 @@ export const UpdateList = observer((props: UpdateListProps): React.JSX.Element =
 
   return (
     <>
-      {vm.updateCols.length > 0 && (
+      {vm.updateCols.length > 0 ? (
         <div style={{ width: "100%", height: "94vh", flexBasis: 0 }}>
           <AgGridReact<UpdateColumn>
             theme={agTheme}
@@ -101,8 +101,9 @@ export const UpdateList = observer((props: UpdateListProps): React.JSX.Element =
             debug={true}
           />
         </div>
-      )}{" "}
-      :<div style={{ padding: "20px" }}>No columns added for update. Please add columns to update.</div>
+      ) : (
+        <div style={{ padding: "20px" }}>No columns added for update. Please add columns to update.</div>
+      )}
     </>
   );
 });
