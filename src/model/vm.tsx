@@ -10,6 +10,8 @@ export class ViewModel {
   selectedRows: SelectionValue[] = [];
   updateCols: UpdateColumn[] = [];
   data?: Array<any>;
+  updateDialogOpen: boolean;
+  touchDialogOpen: any;
   constructor() {
     makeAutoObservable(this);
   }

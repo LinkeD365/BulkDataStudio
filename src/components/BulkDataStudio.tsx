@@ -10,7 +10,10 @@ import {
   MenuTrigger,
   Toolbar,
   ToolbarGroup,
+  Button,
+  Tooltip,
 } from "@fluentui/react-components";
+import { AddSquareFilled, ArrowClockwiseFilled, HandPointFilled } from "@fluentui/react-icons";
 import React from "react";
 import { ViewSelector } from "./ViewSelector";
 import { DataGrid } from "./DataGrid";
@@ -29,9 +32,31 @@ interface BulkDataStudioProps {
 
 export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.Element => {
   const { connection, dvSvc, vm, utils, onLog } = props;
+
+  function updateData(): void {
+    if (vm.updateCols.length === 0) {
+      window.toolboxAPI.utils.showNotification({
+        title: "Incomplete Field Values",
+        body: "No fields have been added to update. Please add fields before updating data.",
+        type: "warning",
+      });
+      return;
+    }
+
+    if (vm.updateCols.some((field) => field.isValid === false)) {
+      window.toolboxAPI.utils.showNotification({
+        title: "Incomplete Field Values",
+        body: "Please provide values for all fields set to 'Fixed' before updating data.",
+        type: "warning",
+      });
+      return;
+    }
+    vm.updateDialogOpen = true;
+  }
+
   const toolbar = (
     <div>
-      <Toolbar>
+      <Toolbar style={{ justifyContent: "space-between" }}>
         <ToolbarGroup>
           <Menu>
             <MenuTrigger disableButtonEnhancement>
@@ -45,6 +70,33 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
               </MenuList>
             </MenuPopover>
           </Menu>
+        </ToolbarGroup>
+        <ToolbarGroup>
+          <Tooltip content="Touch Records Only" relationship="label">
+            <Button
+              icon={<HandPointFilled />}
+              onClick={() => {
+                vm.touchDialogOpen = true;
+              }}
+              disabled={vm.updateCols.length !== 0 || vm.selectedRows.length === 0}
+            />
+          </Tooltip>
+          <Tooltip content="Update Data" relationship="label">
+            <Button
+              icon={<ArrowClockwiseFilled />}
+              onClick={updateData}
+              disabled={vm.updateCols.length === 0 || vm.selectedRows.length === 0}
+            />
+          </Tooltip>
+          <Tooltip content="Managed Fields to Update" relationship="label">
+            <Button
+              icon={<AddSquareFilled />}
+              onClick={() => {
+                vm.updateFieldAddOpen = true;
+              }}
+              disabled={!vm.selectedTable}
+            />
+          </Tooltip>
         </ToolbarGroup>
       </Toolbar>
     </div>
