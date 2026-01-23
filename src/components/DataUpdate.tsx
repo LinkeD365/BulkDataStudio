@@ -2,13 +2,13 @@ import React from "react";
 import { observer } from "mobx-react";
 
 import { TabList, Tab, SelectTabData, SelectTabEvent, TabValue, Button, Tooltip } from "@fluentui/react-components";
-import { AddSquareFilled, ArrowClockwiseFilled, HandPointFilled } from "@fluentui/react-icons";
+import { AddSquareFilled, ArrowClockwiseFilled, HandPointFilled, DeleteFilled } from "@fluentui/react-icons";
 
 import { ViewModel } from "../model/vm";
 import { dvService } from "../utils/dataverseService";
 import { UpdateList } from "./UpdateList";
 import { UpdateAddField } from "./UpdateAddField";
-import { TouchDialog, UpdateDialog } from "./UpdateDialog";
+import { TouchDialog, UpdateDialog, DeleteDialog } from "./UpdateDialog";
 import { utilService } from "../utils/utils";
 interface DataUpdateProps {
   dvSvc: dvService;
@@ -22,6 +22,7 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
   const [selectedValue, setSelectedValue] = React.useState<TabValue>("update");
   const [updateDialogOpen, setUpdateDialogOpen] = React.useState<boolean>(false);
   const [touchDialogOpen, setTouchDialogOpen] = React.useState<boolean>(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState<boolean>(false);
   const onTabSelect = (_event: SelectTabEvent, data: SelectTabData) => {
     setSelectedValue(data.value);
   };
@@ -52,6 +53,9 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
       <TabList selectedValue={selectedValue} onTabSelect={onTabSelect} size="small">
         <Tab id="update" value="update">
           Update
+        </Tab>
+        <Tab id="delete" value="delete">
+          Delete
         </Tab>
         {selectedValue === "update" && (
           <div style={{ display: "flex", width: "100%", alignItems: "center" }}>
@@ -84,8 +88,33 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
             </div>
           </div>
         )}
+        {selectedValue === "delete" && (
+          <div style={{ display: "flex", width: "100%", alignItems: "center" }}>
+            <div style={{ marginLeft: "auto", padding: "0 10px" }}>
+              <Tooltip content="Delete Selected Records" relationship="label">
+                <Button
+                  icon={<DeleteFilled />}
+                  onClick={() => {
+                    setDeleteDialogOpen(true);
+                  }}
+                  disabled={vm.selectedRows.length === 0}
+                />
+              </Tooltip>
+            </div>
+          </div>
+        )}
       </TabList>
       {selectedValue === "update" && <UpdateList dvSvc={dvSvc} vm={vm} onLog={onLog} />}
+      {selectedValue === "delete" && (
+        <div style={{ padding: "20px", textAlign: "center" }}>
+          <p>Select records from the grid above and click the delete button to permanently remove them.</p>
+          <p style={{ fontWeight: "bold", marginTop: "10px" }}>
+            {vm.selectedRows.length > 0
+              ? `${vm.selectedRows.length} record(s) selected for deletion`
+              : "No records selected"}
+          </p>
+        </div>
+      )}
       {vm.updateFieldAddOpen && <UpdateAddField vm={vm} utils={utils} />}
       {updateDialogOpen && (
         <UpdateDialog
@@ -105,6 +134,16 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
           onLog={onLog}
           updateOpen={touchDialogOpen}
           onDialogClose={() => setTouchDialogOpen(false)}
+        />
+      )}
+      {deleteDialogOpen && (
+        <DeleteDialog
+          dvSvc={dvSvc}
+          vm={vm}
+          utils={utils}
+          onLog={onLog}
+          updateOpen={deleteDialogOpen}
+          onDialogClose={() => setDeleteDialogOpen(false)}
         />
       )}
     </div>

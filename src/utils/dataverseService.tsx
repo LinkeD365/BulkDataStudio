@@ -469,4 +469,46 @@ export class dvService {
       }
     });
   }
+
+  async deleteData(table: Table, rows: SelectionValue[]): Promise<void> {
+    return new Promise<void>(async (resolve, reject) => {
+      if (!this.connection) {
+        this.onLog("No connection available", "error");
+        reject(new Error("No connection available"));
+        return;
+      }
+      if (!table || !rows || rows.length === 0) {
+        this.onLog("No table or rows selected for deletion", "error");
+        reject(new Error("No table or rows selected for deletion"));
+        return;
+      }
+
+      const batches: SelectionValue[][] = [];
+      for (let i = 0; i < rows.length; i += this.batchSize) {
+        batches.push(rows.slice(i, i + this.batchSize));
+      }
+
+      this.onLog(`Deleting ${rows.length} records from table: ${table.displayName}`, "info");
+
+      try {
+        await window.toolboxAPI.utils.executeParallel(() =>
+          Promise.all(
+            batches.map(async (batch) => {
+              await Promise.all(
+                batch.map(async (row) => {
+                  await this.dvApi.delete(table.logicalName, row.value);
+                }),
+              );
+            }),
+          ),
+        );
+
+        this.onLog(`Successfully deleted ${rows.length} records`, "success");
+        resolve();
+      } catch (error) {
+        this.onLog(`Error deleting data: ${error}`, "error");
+        reject(error);
+      }
+    });
+  }
 }
