@@ -12,6 +12,7 @@ export class ViewModel {
   data?: Array<any>;
   updateDialogOpen: boolean;
   touchDialogOpen: any;
+  deleteDialogOpen: any;
   constructor() {
     makeAutoObservable(this);
   }

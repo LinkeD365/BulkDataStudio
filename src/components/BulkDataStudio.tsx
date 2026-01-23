@@ -13,7 +13,7 @@ import {
   Button,
   Tooltip,
 } from "@fluentui/react-components";
-import { AddSquareFilled, ArrowClockwiseFilled, HandPointFilled } from "@fluentui/react-icons";
+import { AddSquareFilled, ArrowClockwiseFilled, HandPointFilled, DeleteFilled } from "@fluentui/react-icons";
 import React from "react";
 import { ViewSelector } from "./ViewSelector";
 import { DataGrid } from "./DataGrid";
@@ -95,6 +95,15 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
                 vm.updateFieldAddOpen = true;
               }}
               disabled={!vm.selectedTable}
+            />
+          </Tooltip>
+          <Tooltip content="Delete Records" relationship="label">
+            <Button
+              icon={<DeleteFilled />}
+              onClick={() => {
+                vm.deleteDialogOpen = !vm.deleteDialogOpen;
+              }}
+              disabled={vm.selectedRows.length === 0}
             />
           </Tooltip>
         </ToolbarGroup>
