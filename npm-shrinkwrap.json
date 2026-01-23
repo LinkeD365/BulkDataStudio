@@ -20,7 +20,7 @@
         "react-dom": "^18.3.1"
       },
       "devDependencies": {
-        "@pptb/types": "^1.0.1",
+        "@pptb/types": "^1.0.17",
         "@types/react": "^18.3.12",
         "@types/react-dom": "^18.3.1",
         "@vitejs/plugin-react": "^4.3.4",
@@ -2442,9 +2442,9 @@
       }
     },
     "node_modules/@pptb/types": {
-      "version": "1.0.14",
-      "resolved": "https://registry.npmjs.org/@pptb/types/-/types-1.0.14.tgz",
-      "integrity": "sha512-ApbygIMhfHJ7zabUHaEtVuc/pKKu1a+6T5cA1UMslDmR370HQang3GQ3m8FXYETkXgx8/wlQlqOyyjuVmyliQQ==",
+      "version": "1.0.17",
+      "resolved": "https://registry.npmjs.org/@pptb/types/-/types-1.0.17.tgz",
+      "integrity": "sha512-QKXhPijdftsVb8NGD7Ce46toqfqes4Sw63P07xEK/PzhEAAuTMrjZjcBDqnLlqIYggPzJUOv/fFnBZ/bEkNoRQ==",
       "dev": true,
       "license": "GPL-3.0"
     },

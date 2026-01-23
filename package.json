@@ -15,7 +15,7 @@
       "url": "https://github.com/LinkeD365"
     },
     {
-      "name": "rappen",
+      "name": "Rappen",
       "url": "https://github.com/rappen"
     }
   ],
@@ -23,7 +23,7 @@
     "repository": "https://github.com/LinkeD365/BulkDataStudio",
     "website": "https://linked365.blog",
     "readmeUrl": "https://raw.githubusercontent.com/LinkeD365/BulkDataStudio/refs/heads/main/README.md",
-    "iconUrl": "https://raw.githubusercontent.com/LinkeD365/BulkDataStudio/refs/heads/main/smallIcon.png"
+    "iconUrl": "https://raw.githubusercontent.com/LinkeD365/BulkDataStudio/refs/heads/main/assets/smallIcon.png"
   },
   "repository": {
     "type": "git",
@@ -51,7 +51,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@pptb/types": "^1.0.1",
+    "@pptb/types": "^1.0.17",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

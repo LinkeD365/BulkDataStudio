@@ -1,6 +1,6 @@
 # Bulk Data Studio
 
-Bulk Data Studio
+Bulk Data Studio, a respectful clone of Jonas Rapp's Bulk Data Updater within XrmToolBox.
 
 ## Features
 
@@ -8,6 +8,12 @@ Bulk Data Studio
 - ✅ Select one or more fields to update to static values
 - ✅ Touch Records to trigger workflows
 - ✅ Includes Status and Ownership updates
+- ✅ Bulk delete selected records
+- ✅ Save/Load Job
+
+23-Jan-25
+
+Added bulk delete & save config functionality
 
 19-Jan-25
 

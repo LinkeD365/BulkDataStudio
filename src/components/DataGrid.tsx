@@ -93,17 +93,23 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     };
   }, []);
   return (
-    <div style={{ width: "100%", height: "85vh" }}>
-      <AgGridReact
-        suppressFieldDotNotation
-        rowData={vm.data}
-        columnDefs={cols}
-        theme={agTheme}
-        domLayout="normal"
-        defaultColDef={defaultColDef}
-        rowSelection={rowSelection}
-        onSelectionChanged={rowSelected}
-      />
-    </div>
+    <>
+      {vm.data && vm.data.length > 0 ? (
+        <div style={{ width: "100%", height: "94vh" }}>
+          <AgGridReact
+            suppressFieldDotNotation
+            rowData={vm.data}
+            columnDefs={cols}
+            theme={agTheme}
+            domLayout="normal"
+            defaultColDef={defaultColDef}
+            rowSelection={rowSelection}
+            onSelectionChanged={rowSelected}
+          />
+        </div>
+      ) : (
+        <div style={{ padding: "20px" }}>No data to display. Please select "Fetch Data" to load data.</div>
+      )}
+    </>
   );
 });

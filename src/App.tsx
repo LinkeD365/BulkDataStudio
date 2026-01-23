@@ -54,7 +54,7 @@ function App() {
       document.body.setAttribute("data-ag-theme-mode", currentTheme);
       setTheme(currentTheme);
     })();
-    addLog("React Sample Tool initialized", "success");
+    addLog("Bulk Data Studio initialized", "success");
   }, [addLog]);
 
   const dvSvc = useMemo(() => {

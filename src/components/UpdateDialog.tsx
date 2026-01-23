@@ -157,3 +157,69 @@ export const TouchDialog = observer((props: UpdateDialogProps): React.JSX.Elemen
     </div>
   );
 });
+
+export const DeleteDialog = observer((props: UpdateDialogProps): React.JSX.Element => {
+  const { dvSvc, vm, onLog, updateOpen, onDialogClose, utils } = props;
+  const [deletingData, setDeletingData] = React.useState(false);
+
+  const deleteData = async () => {
+    setDeletingData(true);
+    await dvSvc
+      .deleteData(vm.selectedTable!, vm.selectedRows)
+      .then(async () => {
+        onLog("Records deleted successfully", "success");
+        window.toolboxAPI.utils.showNotification({
+          title: "Bulk Data Studio",
+          body: `${vm.selectedRows.length} records deleted successfully`,
+          type: "success",
+        });
+        await utils.delayLoadData(1000);
+      })
+      .catch((error) => {
+        const errorMessage = error instanceof Error ? error.message : "Failed to delete records";
+        onLog(errorMessage, "error");
+        window.toolboxAPI.utils.showNotification({
+          title: "Bulk Data Studio",
+          body: errorMessage,
+          type: "error",
+        });
+      })
+      .finally(() => {
+        setDeletingData(false);
+        onDialogClose();
+      });
+  };
+  return (
+    <div>
+      <Dialog
+        open={updateOpen}
+        onOpenChange={(_) => {
+          onDialogClose();
+        }}
+        modalType="alert"
+      >
+        <DialogSurface>
+          <DialogBody>
+            <DialogContent>
+              <p>
+                {`${vm.selectedRows.length} records on the ${vm.selectedTable?.displayName} table will be permanently deleted.`}
+              </p>
+              <p style={{ fontWeight: "bold", color: "red" }}>This action cannot be undone!</p>
+              <p>Confirm deletion!</p>
+            </DialogContent>
+          </DialogBody>
+          <DialogActions>
+            <Button style={{ marginLeft: "auto" }} disabled={deletingData} appearance="primary" onClick={deleteData}>
+              Delete Records
+            </Button>
+            <DialogTrigger disableButtonEnhancement>
+              <Button appearance="secondary" disabled={deletingData}>
+                Cancel
+              </Button>
+            </DialogTrigger>
+          </DialogActions>
+        </DialogSurface>
+      </Dialog>
+    </div>
+  );
+});

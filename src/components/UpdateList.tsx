@@ -90,14 +90,20 @@ export const UpdateList = observer((props: UpdateListProps): React.JSX.Element =
   ];
 
   return (
-    <div style={{ width: "100%", height: "80vh", flexBasis: 0 }}>
-      <AgGridReact<UpdateColumn>
-        theme={agTheme}
-        rowData={vm.updateCols || []}
-        defaultColDef={defaultColDef}
-        columnDefs={cols}
-        debug={true}
-      />
-    </div>
+    <>
+      {vm.updateCols.length > 0 ? (
+        <div style={{ width: "100%", height: "94vh", flexBasis: 0 }}>
+          <AgGridReact<UpdateColumn>
+            theme={agTheme}
+            rowData={vm.updateCols || []}
+            defaultColDef={defaultColDef}
+            columnDefs={cols}
+            debug={true}
+          />
+        </div>
+      ) : (
+        <div style={{ padding: "20px" }}>No columns added for update. Please add columns to update.</div>
+      )}
+    </>
   );
 });
