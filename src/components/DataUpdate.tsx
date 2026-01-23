@@ -4,7 +4,7 @@ import { ViewModel } from "../model/vm";
 import { dvService } from "../utils/dataverseService";
 import { UpdateList } from "./UpdateList";
 import { UpdateAddField } from "./UpdateAddField";
-import { TouchDialog, UpdateDialog } from "./UpdateDialog";
+import { TouchDialog, UpdateDialog, DeleteDialog } from "./UpdateDialog";
 import { utilService } from "../utils/utils";
 interface DataUpdateProps {
   dvSvc: dvService;
@@ -38,6 +38,16 @@ export const DataUpdate = observer((props: DataUpdateProps): React.JSX.Element =
           onLog={onLog}
           updateOpen={vm.touchDialogOpen}
           onDialogClose={() => (vm.touchDialogOpen = false)}
+        />
+      )}
+      {deleteDialogOpen && (
+        <DeleteDialog
+          dvSvc={dvSvc}
+          vm={vm}
+          utils={utils}
+          onLog={onLog}
+          updateOpen={deleteDialogOpen}
+          onDialogClose={() => setDeleteDialogOpen(false)}
         />
       )}
     </div>
