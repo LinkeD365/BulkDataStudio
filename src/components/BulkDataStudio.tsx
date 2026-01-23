@@ -13,7 +13,13 @@ import {
   Button,
   Tooltip,
 } from "@fluentui/react-components";
-import { AddSquareFilled, ArrowClockwiseFilled, HandPointFilled, DeleteFilled } from "@fluentui/react-icons";
+import {
+  AddSquareFilled,
+  ArrowClockwiseFilled,
+  HandPointFilled,
+  DeleteFilled,
+  SaveFilled,
+} from "@fluentui/react-icons";
 import React from "react";
 import { ViewSelector } from "./ViewSelector";
 import { DataGrid } from "./DataGrid";
@@ -52,6 +58,57 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
       return;
     }
     vm.updateDialogOpen = true;
+  }
+
+  async function saveConfiguration(): Promise<void> {
+    if (!vm.selectedTable) {
+      window.toolboxAPI.utils.showNotification({
+        title: "No Table Selected",
+        body: "Please select a table before saving the configuration.",
+        type: "warning",
+      });
+      return;
+    }
+    
+
+    try {
+      const config = {
+        table: {
+          logicalName: vm.selectedTable.logicalName,
+        },
+        updateColumns: vm.updateCols.map((col) => ({
+          columnName: col.column.logicalName,
+          columnDisplayName: col.column.displayName,
+          columnType: col.column.type,
+          setStatus: col.setStatus,
+          onlyDifferent: col.onlyDifferent,
+          newValue: col.newValue,
+          selectedSelections: col.selectedSelections,
+        })),
+      };
+      console.log("Saving configuration:", config);
+
+      await window.toolboxAPI.fileSystem
+        .saveFile(`${vm.selectedTable.logicalName}-BulkConfig.json`, JSON.stringify(config, null, 2))
+        .then(() => {
+          onLog("Configuration saved successfully", "success");
+          window.toolboxAPI.utils.showNotification({
+            title: "Configuration Saved",
+            body: "Configuration has been saved successfully.",
+            type: "success",
+          });
+        })
+        .catch((error) => {
+          onLog(`Error saving configuration: ${error}`, "error");
+          window.toolboxAPI.utils.showNotification({
+            title: "Error Saving Configuration",
+            body: `An error occurred while saving the configuration: ${error}`,
+            type: "error",
+          });
+        });
+    } catch (error) {
+      onLog(`Error saving configuration: ${error}`, "error");
+    }
   }
 
   const toolbar = (
@@ -96,6 +153,9 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
               }}
               disabled={!vm.selectedTable}
             />
+          </Tooltip>
+          <Tooltip content="Save Configuration" relationship="label">
+            <Button icon={<SaveFilled />} onClick={saveConfiguration} disabled={!vm.selectedTable} />
           </Tooltip>
           <Tooltip content="Delete Records" relationship="label">
             <Button
