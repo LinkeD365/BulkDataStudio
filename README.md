@@ -1,6 +1,6 @@
 # Bulk Data Studio
 
-Bulk Data Studio, a respectful clone of Jonas Rapp's Bulk Data Updater within XrmToolBox.
+Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https://jonasr.app/bdu/) within XrmToolBox.
 
 ## Features
 
@@ -10,6 +10,10 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's Bulk Data Updater within Xr
 - ✅ Includes Status and Ownership updates
 - ✅ Bulk delete selected records
 - ✅ Save/Load Job
+
+25-Jan-25
+Fixed bug with logging
+[#20](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
 
 23-Jan-25
 
