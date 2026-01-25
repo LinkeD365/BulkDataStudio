@@ -49,6 +49,7 @@ export function useEventLog() {
   // Use useCallback without dependencies since we're using the functional update form of setState
   // This ensures the functions are stable across renders and won't cause infinite loops
   const addLog = useCallback((message: string, type: LogEntry["type"] = "info") => {
+    console.log(`[${type.toUpperCase()}] ${message}`);
     setLogs((prev) => [
       {
         timestamp: new Date(),

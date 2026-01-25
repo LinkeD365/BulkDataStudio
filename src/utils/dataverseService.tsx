@@ -35,22 +35,7 @@ export class dvService {
           "EntitySetName",
         ])
         .then((entities) => {
-          const filteredOut = entities.value.filter((entity: any) => !entity.PrimaryNameAttribute);
-          if (filteredOut.length > 0) {
-            const logicalNames = filteredOut
-              .map((entity: any) => entity.LogicalName)
-              .filter((name: any) => typeof name === "string")
-              .join(", ");
-            this.onLog(
-              `Filtered out ${filteredOut.length} entities without PrimaryNameAttribute` +
-                (logicalNames ? `: ${logicalNames}` : ""),
-              "warning",
-            );
-          }
-
-          const entitiesWithPrimaryName = entities.value.filter(
-            (entity: any) => entity.PrimaryNameAttribute,
-          );
+          const entitiesWithPrimaryName = entities.value.filter((entity: any) => entity.PrimaryNameAttribute);
 
           return entitiesWithPrimaryName
             .map(
@@ -82,7 +67,6 @@ export class dvService {
     }
 
     try {
-      console.log("Loading views from Dataverse...", table);
       const fetchXml = [
         "<fetch>",
         "  <entity name='savedquery'>",
@@ -107,12 +91,12 @@ export class dvService {
             fetchXml: rec.fetchxml ?? rec.fetchXml ?? "",
           }) as View,
       );
-      console.log(`Loaded ${views.length} user views`, table, "success");
+      this.onLog(`Loaded ${views.length} views for table ${table.displayName}`, "success");
 
       return views;
     } catch (error) {
-      this.onLog(`Error loading tables: ${error}`, "error");
-      console.error("Error loading tables:", error);
+      this.onLog(`Error loading views for table ${table.displayName}: ${error}`, "error");
+      console.error("Error loading views:", error);
       throw error;
     }
   }
@@ -125,7 +109,6 @@ export class dvService {
     this.onLog("Loading data from Dataverse...", "info");
     try {
       const data = await this.dvApi.fetchXmlQuery(fetchXml);
-
       const records = Array.isArray(data?.value) ? data.value : Array.isArray(data) ? data : [];
       this.onLog(`Loaded ${records.length} records from Dataverse`, "success");
       return records;
