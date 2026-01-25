@@ -13,7 +13,7 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https:/
 
 25-Jan-25
 Fixed bug with logging
-[#20](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
+[#20 - Display choice fields as string](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
 
 23-Jan-25
 
