@@ -1,6 +1,7 @@
 # Bulk Data Studio
 
 Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https://jonasr.app/bdu/) within XrmToolBox.
+Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https://jonasr.app/bdu/) within XrmToolBox.
 
 ## Features
 
@@ -13,19 +14,7 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https:/
 
 25-Jan-25
 Fixed bug with logging
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-[#20 - Display choice fields as string](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
-=======
 [#20](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
->>>>>>> da6e45d ([FIX] [FEAT] Show choice column labels + allow filter in views on choice columns)
-=======
-[#20](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
->>>>>>> da6e45d ([FIX] [FEAT] Show choice column labels + allow filter in views on choice columns)
-=======
-[#20](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
->>>>>>> da6e45d ([FIX] [FEAT] Show choice column labels + allow filter in views on choice columns)
 
 23-Jan-25
 
