@@ -29,6 +29,7 @@ import "allotment/dist/style.css";
 import { DataUpdate } from "./DataUpdate";
 import { utilService } from "../utils/utils";
 import { UpdateColumn } from "../model/UpdateColumn";
+import { FetchXmlEditorDialog } from "./FetchXmlEditorDialog";
 
 interface BulkDataStudioProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -89,7 +90,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
     try {
       await window.toolboxAPI.fileSystem.saveFile(
         `${vm.selectedTable.logicalName}-BulkConfig.json`,
-        JSON.stringify(config, null, 2)
+        JSON.stringify(config, null, 2),
       );
 
       onLog("Configuration saved successfully", "success");
@@ -126,7 +127,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
         onLog("Reading configuration file...", "info");
 
         const config = JSON.parse(content);
-        
+
         // Validate the configuration structure
         if (!config || typeof config !== "object") {
           throw new Error("Invalid configuration: Configuration must be an object");
@@ -140,7 +141,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
         if (!config.updateColumns || !Array.isArray(config.updateColumns)) {
           throw new Error("Invalid configuration: Missing or invalid 'updateColumns' array");
         }
-        
+
         onLog("Configuration structure validated", "info");
 
         // Find the table by logical name
@@ -181,7 +182,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
             onLog(`Skipping invalid column configuration: missing or invalid columnName`, "warning");
             continue;
           }
-          
+
           const column = table.fields.find((f) => f.logicalName === colConfig.columnName);
           if (column) {
             const updateCol = new UpdateColumn(column);
@@ -189,16 +190,13 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
             updateCol.onlyDifferent = colConfig.onlyDifferent || false;
             updateCol.newValue = colConfig.newValue;
             updateCol.selectedSelections = colConfig.selectedSelections;
-            
+
             // Load metadata for lookup and choice fields
             if (column.type === "Lookup" && !column.lookupTargetTable) {
               try {
-                const lookupTable = await dvSvc.getLookupTargetTable(
-                  vm.selectedTable.logicalName,
-                  column.logicalName
-                );
+                const lookupTable = await dvSvc.getLookupTargetTable(vm.selectedTable.logicalName, column.logicalName);
                 column.lookupTargetTable = vm.tables.find((t) => t.logicalName === lookupTable);
-                
+
                 if (column.lookupTargetTable && !column.lookupTargetTable.views) {
                   const views = await dvSvc.getViews(column.lookupTargetTable);
                   column.lookupTargetTable.views = views;
@@ -221,7 +219,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
                 onLog(`Error loading choice values for field ${column.logicalName}: ${error}`, "warning");
               }
             }
-            
+
             updateCols.push(updateCol);
           } else {
             onLog(`Field "${colConfig.columnName}" not found in table "${table.logicalName}"`, "warning");
@@ -252,13 +250,27 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
         <ToolbarGroup>
           <Menu>
             <MenuTrigger disableButtonEnhancement>
-              <MenuButton>Fetch Data</MenuButton>
+              <MenuButton disabled={vm.isDataLoading}>Fetch Data</MenuButton>
             </MenuTrigger>
 
             <MenuPopover>
               <MenuList>
-                <MenuItem onClick={() => (vm.viewSelectorOpen = true)}>Open View</MenuItem>
-                <MenuItem>Edit FetchXML (coming)</MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    vm.viewSelectorOpen = true;
+                    vm.fetchXml = "";
+                  }}
+                >
+                  Open View
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    vm.fetchXmlEditorOpen = true;
+                    vm.selectedView = undefined;
+                  }}
+                >
+                  Edit FetchXML
+                </MenuItem>
               </MenuList>
             </MenuPopover>
           </Menu>
@@ -326,11 +338,12 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
     <div>
       {toolbar}
       {vm.viewSelectorOpen && <ViewSelector dvSvc={dvSvc} vm={vm} onLog={onLog} />}
+      {vm.fetchXmlEditorOpen && <FetchXmlEditorDialog vm={vm} onLog={onLog} />}
       <div style={{ height: "94vh" }}>
         <Allotment defaultSizes={[100, 200]}>
           <Allotment.Pane minSize={200}>
             <div>
-              <DataGrid connection={connection} vm={vm} utils={utils} />
+              <DataGrid connection={connection} vm={vm} utils={utils} onLog={onLog} />
             </div>
           </Allotment.Pane>
           <Allotment.Pane minSize={300}>

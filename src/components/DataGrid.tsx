@@ -36,10 +36,11 @@ interface DataGridProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   vm: ViewModel;
   utils: utilService;
+  onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
 export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
-  const { connection, vm, utils } = props;
+  const { connection, vm, utils, onLog } = props;
 
   function rowSelected(event: SelectionChangedEvent<any>): void {
     const selectedRows = event.api.getSelectedRows();
@@ -54,13 +55,96 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     } else vm.selectedRows = [];
   }
   React.useEffect(() => {
+    console.log("useEffect for loadData with selectedView");
     if (utils && vm.selectedView && connection) utils.loadData();
   }, [connection, utils, vm.selectedView]);
 
+  React.useEffect(() => {
+    (async () => {
+      vm.isDataLoading = true;
+      if (utils && vm.fetchXml) {
+        if (vm.tables.length === 0) {
+          await utils.dvSvc
+            .getTables()
+            .then((tables) => {
+              vm.tables = tables;
+              onLog(`Loaded ${tables.length} tables`, "success");
+            })
+            .catch((error) => {
+              onLog(`Error loading tables: ${error.message}`, "error");
+            });
+        }
+        // Extract table name from fetchXml
+        const tableMatch = vm.fetchXml.match(/<entity\s+name=['"]([^'"]+)['"]/);
+        if (tableMatch && tableMatch[1]) {
+          const tableName = tableMatch[1];
+          const selectedTable = vm.tables?.find((t) => t.logicalName === tableName);
+          if (selectedTable) {
+            vm.selectedTable = selectedTable;
+            if (!vm.selectedTable.fields || vm.selectedTable.fields.length === 0) {
+              await utils.dvSvc
+                .getFields(vm.selectedTable.logicalName)
+                .then((fields) => {
+                  vm.selectedTable!.fields = fields;
+                  onLog(`Loaded ${fields.length} fields for table: ${tableName}`, "success");
+                })
+                .catch((error) => {
+                  onLog(`Error loading fields for table ${tableName}: ${error.message}`, "error");
+                });
+            }
+          }
+        }
+        // Extract attributes from fetchXml
+        const attributeMatches = vm.fetchXml.match(/<attribute\s+name=['"]([^'"]+)['"]/g);
+        if (attributeMatches) {
+          vm.fetchFields = attributeMatches
+            .map((attr) => {
+              const nameMatch = attr.match(/name=['"]([^'"]+)['"]/);
+              return nameMatch ? nameMatch[1] : "";
+            })
+            .filter((name) => name !== "");
+        }
+
+        await utils.loadData().catch(async (error: any) => {
+          await window.toolboxAPI.utils.showNotification({
+            title: "Error loading data",
+            body: `Error loading data: ${error.message}`,
+            type: "error",
+          });
+          onLog(`Error loading data: ${error.message}`, "error");
+        });
+      }
+      vm.isDataLoading = false;
+    })();
+  }, [vm.fetchXml]);
+
   const cols = React.useMemo(() => {
-    if (!vm.selectedView || !vm.selectedTable || vm.selectedTable.fields === undefined) {
+    console.log(vm);
+    if ((!vm.selectedView && !vm.fetchXml) || !vm.selectedTable || vm.selectedTable.fields === undefined) {
+      console.log(!vm.selectedView, !vm.fetchXml, !vm.selectedTable, vm.selectedTable?.fields === undefined);
       return [];
     }
+
+    if (vm.fetchXml) {
+      console.log("Using fetchXml to determine columns");
+      // If no fieldNames in the view, but we have FetchXML, extract fields from FetchXML
+      return (
+        vm.fetchFields
+          .filter((fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute)
+          .map((fieldName) => {
+            const field = vm.selectedTable?.fields.find((f) => f.logicalName === fieldName);
+            if (field) {
+              return {
+                headerName: field?.displayName || fieldName,
+                field: field?.dataName || fieldName,
+                flex: field?.logicalName === vm.selectedTable?.primaryNameAttribute ? 2 : 1,
+              };
+            }
+          })
+          .filter((col) => col !== undefined) || []
+      );
+    }
+    console.log("Using selectedView to determine columns", vm.selectedView?.fieldNames);
     return (
       vm.selectedView?.fieldNames
         ?.filter((fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute)
@@ -76,7 +160,7 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
         })
         .filter((col) => col !== undefined) || []
     );
-  }, [vm.selectedView, vm.selectedTable]);
+  }, [vm.selectedView, vm.selectedTable, vm.fetchXml, vm.fetchFields, vm.data]);
 
   const defaultColDef: ColDef = {
     sortable: true,

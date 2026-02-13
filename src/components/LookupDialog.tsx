@@ -118,6 +118,7 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
             .match(/attribute\s+name\s*=\s*["']([^"']+)["']/g)
             ?.map((attr) => attr.match(/["']([^"']+)["']/)?.[1])
             .filter((x): x is string => x !== undefined) || [];
+        console.log("Extracted field names for selected view:", localSelectedView.fieldNames);
       }
     };
     loadViewMeta();

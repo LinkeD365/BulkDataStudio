@@ -14,6 +14,9 @@ import {
   useComboboxFilter,
 } from "@fluentui/react-components";
 import React from "react";
+import Editor from "react-simple-code-editor";
+import Prism from "prismjs";
+import "prismjs/components/prism-markup";
 
 interface BulkDataStudioProps {
   dvSvc: dvService;
@@ -25,7 +28,45 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   const { dvSvc, vm, onLog } = props;
   const [views, setViews] = React.useState<Array<View>>([]);
   const [localSelectedView, setLocalSelectedView] = React.useState<View>(vm.selectedView!);
+  const [localFetchXml, setLocalFetchXml] = React.useState<string>(vm.selectedView?.fetchXml || "");
   const [query, setQuery] = React.useState<string>("");
+
+  const formatXml = (xml: string): string | null => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, "application/xml");
+      const parseError = doc.getElementsByTagName("parsererror")[0];
+      if (parseError) {
+        return null;
+      }
+
+      const serialized = new XMLSerializer().serializeToString(doc);
+      const withBreaks = serialized.replace(/(>)(<)(\/*)/g, "$1\n$2$3");
+      let pad = 0;
+
+      return withBreaks
+        .split("\n")
+        .map((line) => {
+          const isClosingTag = /^<\/.+>/.test(line);
+          const isOpeningTag = /^<[^!?].*[^/]>$/.test(line) && !/^<[^!?].*\/>$/.test(line);
+
+          if (isClosingTag) {
+            pad = Math.max(pad - 1, 0);
+          }
+
+          const indent = "  ".repeat(pad);
+
+          if (isOpeningTag) {
+            pad += 1;
+          }
+
+          return `${indent}${line}`;
+        })
+        .join("\n");
+    } catch {
+      return null;
+    }
+  };
 
   React.useEffect(() => {
     const loadTables = async () => {
@@ -48,7 +89,6 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
     const loadViews = async () => {
       if (vm.selectedTable) {
         setViews([]);
-
         setViews(await dvSvc.getViews(vm.selectedTable));
       }
     };
@@ -72,13 +112,23 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
     const loadViewMeta = async () => {
       if (localSelectedView) {
         localSelectedView.fieldNames =
-          localSelectedView.fetchXml
+          localFetchXml
             .match(/attribute\s+name\s*=\s*["']([^"']+)["']/g)
             ?.map((attr) => attr.match(/["']([^"']+)["']/)?.[1])
             .filter((x): x is string => x !== undefined) || [];
       }
     };
     loadViewMeta();
+  }, [localSelectedView, localFetchXml]);
+
+  React.useEffect(() => {
+    if (localSelectedView) {
+      const nextXml = localSelectedView.fetchXml || "";
+      const formatted = formatXml(nextXml);
+      setLocalFetchXml(formatted || nextXml);
+    } else {
+      setLocalFetchXml("");
+    }
   }, [localSelectedView]);
 
   const onTableSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
@@ -91,6 +141,9 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   };
 
   const openSelectedView = () => {
+    if (localSelectedView) {
+      localSelectedView.fetchXml = localFetchXml;
+    }
     vm.selectedView = localSelectedView;
     vm.viewSelectorOpen = false;
     onLog(`Selected view: ${localSelectedView.label}`, "success");
@@ -134,7 +187,21 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
                 ))}
               </Combobox>
             </Field>
-            <div>{vm.selectedView?.fetchXml}</div>
+            <Field label="FetchXML" >
+              <Editor
+                value={localFetchXml}
+                onValueChange={(value) => {
+                  if (localSelectedView) {
+                    setLocalFetchXml(value);
+                  }
+                }}
+                highlight={(code) => Prism.highlight(code, Prism.languages.markup, "markup")}
+                padding={12}
+                className={`fetchxml-editor${!localSelectedView ? " fetchxml-editor--disabled" : ""}`}
+                preClassName="fetchxml-editor__pre"
+                textareaClassName="fetchxml-editor__textarea"
+              />
+            </Field>
           </div>
         </DrawerBody>
         <DrawerFooter style={{ display: "flex", width: "100%" }}>
