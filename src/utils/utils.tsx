@@ -19,18 +19,31 @@ export class utilService {
   }
 
   async loadData(): Promise<void> {
-    return new Promise<void>(async (resolve) => {
-      if (this.vm.selectedView) {
-        this.onLog(`Loading data for view: ${this.vm.selectedView.label}`, "info");
-        try {
-          const data = await this.dvSvc.loadData(this.vm.selectedView.fetchXml);
-          this.vm.data = data;
-          this.onLog(`Loaded ${data.length} records from view: ${this.vm.selectedView.label}`, "success");
-        } catch (error: any) {
-          this.onLog(`Error loading data: ${error.message}`, "error");
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        if (this.vm.selectedView) {
+          this.onLog(`Loading data for view: ${this.vm.selectedView.label}`, "info");
+          try {
+            const data = await this.dvSvc.loadData(this.vm.selectedView.fetchXml);
+            this.vm.data = data;
+            this.onLog(`Loaded ${data.length} records from view: ${this.vm.selectedView.label}`, "success");
+          } catch (error: any) {
+            reject(error);
+          }
+        } else if (this.vm.fetchXml) {
+          this.onLog(`Loading data for custom FetchXML`, "info");
+          try {
+            const data = await this.dvSvc.loadData(this.vm.fetchXml);
+            this.vm.data = data;
+            this.onLog(`Loaded ${data.length} records for custom FetchXML`, "success");
+            resolve();
+          } catch (error: any) {
+            reject(error);
+          }
         }
+      } catch (error: any) {
+        reject(error);
       }
-      resolve();
     });
   }
 

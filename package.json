@@ -47,13 +47,16 @@
     "allotment": "^1.20.5",
     "mobx": "^6.15.0",
     "mobx-react": "^9.2.1",
+    "prismjs": "^1.30.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-simple-code-editor": "^0.14.1"
   },
   "devDependencies": {
     "@pptb/types": "^1.0.17",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/prismjs": "^1.26.5",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^7.1.11"

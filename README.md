@@ -10,16 +10,20 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https:/
 - ✅ Includes Status and Ownership updates
 - ✅ Bulk delete selected records
 - ✅ Save/Load Job
+- ✅ Allow Edit of FetchXml
 
-25-Jan-25
+13/02/26
+Added [#14 FetchXml Edit Support](https://github.com/LinkeD365/BulkDataStudio/issues/14)
+
+25-Jan-26
 Fixed bug with logging
 [#20 - Display choice fields as string](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
 
-23-Jan-25
+23-Jan-26
 
 Added bulk delete & save config functionality
 
-19-Jan-25
+19-Jan-26
 
 Added Status and Ownership updates and fixed bugs around view selection
 

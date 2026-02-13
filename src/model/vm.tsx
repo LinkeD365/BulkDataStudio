@@ -10,9 +10,13 @@ export class ViewModel {
   selectedRows: SelectionValue[] = [];
   updateCols: UpdateColumn[] = [];
   data?: Array<any>;
+  isDataLoading: boolean = false;
   updateDialogOpen: boolean = false;
   touchDialogOpen: boolean = false;
   deleteDialogOpen: boolean = false;
+  fetchXmlEditorOpen: boolean = false;
+  fetchXml?: string;
+  fetchFields: string[] = [];
   constructor() {
     makeAutoObservable(this);
   }
