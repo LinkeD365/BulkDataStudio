@@ -27,7 +27,7 @@ interface BulkDataStudioProps {
 export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Element => {
   const { dvSvc, vm, onLog } = props;
   const [views, setViews] = React.useState<Array<View>>([]);
-  const [localSelectedView, setLocalSelectedView] = React.useState<View>(vm.selectedView!);
+  const [localSelectedView, setLocalSelectedView] = React.useState<View | undefined>(vm.selectedView);
   const [localFetchXml, setLocalFetchXml] = React.useState<string>(vm.selectedView?.fetchXml || "");
   const [query, setQuery] = React.useState<string>("");
 
@@ -143,10 +143,10 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   const openSelectedView = () => {
     if (localSelectedView) {
       localSelectedView.fetchXml = localFetchXml;
+      vm.selectedView = localSelectedView;
+      vm.viewSelectorOpen = false;
+      onLog(`Selected view: ${localSelectedView.label}`, "success");
     }
-    vm.selectedView = localSelectedView;
-    vm.viewSelectorOpen = false;
-    onLog(`Selected view: ${localSelectedView.label}`, "success");
   };
 
   const tablesList = vm.tables.map((table) => ({
