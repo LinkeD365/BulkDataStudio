@@ -1,7 +1,6 @@
 # Bulk Data Studio
 
 Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https://jonasr.app/bdu/) within XrmToolBox.
-Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https://jonasr.app/bdu/) within XrmToolBox.
 
 ## Features
 
@@ -18,15 +17,7 @@ Added [#14 FetchXml Edit Support](https://github.com/LinkeD365/BulkDataStudio/is
 
 25-Jan-26
 Fixed bug with logging
-<<<<<<< HEAD
-<<<<<<< HEAD
-[#20](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
-=======
 [#20 - Display choice fields as string](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
->>>>>>> e15f158 (Update README.md)
-=======
-[#20 - Display choice fields as string](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
->>>>>>> e15f158d4bb1c176a0387b2a35eceae2d9d748b0
 
 23-Jan-26
 
