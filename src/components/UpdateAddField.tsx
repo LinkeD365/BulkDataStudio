@@ -128,8 +128,10 @@ export const UpdateAddField = observer((props: UpdateAddFieldProps): React.JSX.E
     if (vm.selectedTable?.fields.length != 0) {
       if (onlyViewColumns) {
         const onlyView =
-          vm.selectedTable?.fields.filter(
-            (field) => vm.selectedView?.fieldNames.includes(field.logicalName) && !field.primaryKey,
+          vm.selectedTable?.fields.filter((field) =>
+            vm.selectedView
+              ? vm.selectedView?.fieldNames.includes(field.logicalName) && !field.primaryKey
+              : vm.fetchFields.includes(field.logicalName) && !field.primaryKey,
           ) || [];
         if (searchQuery && searchQuery.trim() !== "") {
           setFilteredColumns(
@@ -157,7 +159,7 @@ export const UpdateAddField = observer((props: UpdateAddFieldProps): React.JSX.E
         }
       }
     }
-  }, [onlyViewColumns, searchQuery]);
+  }, [onlyViewColumns, searchQuery, vm.selectedView, vm.fetchFields, vm.selectedTable]);
 
   function onSearchFields(_: SearchBoxChangeEvent, data: InputOnChangeData): void {
     setSearchQuery(data.value || "");

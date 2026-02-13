@@ -361,3 +361,49 @@ body {
 .log::-webkit-scrollbar-thumb:hover {
   background: #5568d3;
 }
+
+.fetchxml-editor {
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  min-height: 220px;
+}
+
+.fetchxml-editor--disabled {
+  opacity: 0.6;
+}
+
+.fetchxml-editor--disabled textarea {
+  pointer-events: none;
+}
+
+.fetchxml-editor__textarea,
+.fetchxml-editor__pre {
+  outline: none;
+}
+
+.fetchxml-editor__pre {
+  margin: 0;
+}
+
+.token.tag,
+.token.tag .token.punctuation {
+  color: #7dd3fc;
+}
+
+.token.attr-name {
+  color: #fbbf24;
+}
+
+.token.attr-value,
+.token.string {
+  color: #86efac;
+}
+
+.token.punctuation {
+  color: #94a3b8;
+}
