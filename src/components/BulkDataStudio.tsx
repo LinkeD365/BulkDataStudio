@@ -83,6 +83,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
         onlyDifferent: col.onlyDifferent,
         newValue: col.newValue,
         selectedSelections: col.selectedSelections,
+        expressionTemplate: col.expressionTemplate,
       })),
     };
     onLog("Saving configuration...", "info");
@@ -190,6 +191,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
             updateCol.onlyDifferent = colConfig.onlyDifferent || false;
             updateCol.newValue = colConfig.newValue;
             updateCol.selectedSelections = colConfig.selectedSelections;
+            updateCol.expressionTemplate = colConfig.expressionTemplate;
 
             // Load metadata for lookup and choice fields
             if (column.type === "Lookup" && !column.lookupTargetTable) {

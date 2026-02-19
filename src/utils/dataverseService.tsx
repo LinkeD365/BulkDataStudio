@@ -1,5 +1,6 @@
 import { UpdateColumn } from "../model/UpdateColumn";
 import { Column, SelectionValue, Table, View } from "../model/vm";
+import { ExpressionEvaluator } from "./expressionEvaluator";
 
 interface dvServiceProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -241,9 +242,20 @@ export class dvService {
         reject(new Error("No fields selected for data update"));
       }
 
+      // Evaluate calculated columns before update
+      const evaluatedUpdates = await this.evaluateCalculatedColumns(table, rows, updates);
+
+      const touchUpdates = evaluatedUpdates.filter((u) => u.setStatus === "Touch");
+      const needsRecordFetch = evaluatedUpdates.some((u) => u.onlyDifferent) || touchUpdates.length > 0;
+
       let data: any[] = [];
-      if (updates.some((upd) => upd.onlyDifferent)) {
-        /// First, retrieve existing values to compare
+      if (needsRecordFetch) {
+        // Determine fields to fetch: touch columns + onlyDifferent columns
+        const fieldsToFetch = new Set<string>();
+        touchUpdates.forEach((u) => fieldsToFetch.add(u.column.logicalName));
+        evaluatedUpdates.filter((u) => u.onlyDifferent).forEach((u) => fieldsToFetch.add(u.column.logicalName));
+
+        const recordMap = new Map<string, any>();
         const batches: SelectionValue[][] = [];
         for (let i = 0; i < rows.length; i += this.batchSize) {
           batches.push(rows.slice(i, i + this.batchSize));
@@ -251,13 +263,12 @@ export class dvService {
         await Promise.all(
           batches.map(async (batch) => {
             const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
-            const attributeStirng = updates
-              .filter((upd) => upd.onlyDifferent)
-              .map((upd) => `<attribute name='${upd.dbField}'/>`)
+            const attributeString = Array.from(fieldsToFetch)
+              .map((f) => `<attribute name='${f}'/>`)
               .join("");
             const fetchXML = `<fetch>
     <entity name="${table.logicalName}">
-    ${attributeStirng}
+    ${attributeString}
     <filter type="and">
       <condition attribute="${table.primaryIdAttribute}" operator="in">${rowsString}
       </condition>
@@ -265,30 +276,45 @@ export class dvService {
     </entity>
   </fetch>`;
             const checkData = await this.dvApi.fetchXmlQuery(fetchXML);
-            /// Now prepare update data only for fields that are different
+            console.log("Fetched records for update evaluation:", checkData);
             const records = Array.isArray(checkData?.value) ? checkData.value : [];
-            data.push(
-              batch.map((row) => ({
-                [table.primaryIdAttribute]: row.value,
-                "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
-                ...updates.reduce((acc, curr) => {
-                  const existing = records.find((r: any) => r[table.primaryIdAttribute] === row.value);
-                  if (!curr.onlyDifferent || (existing && existing[curr.dbField] !== curr.dbValue)) {
-                    acc[curr.dbField] = curr.dbValue;
-                  }
-                  return acc;
-                }, {} as any),
-              })),
-            );
+            records.forEach((r: any) => recordMap.set(r[table.primaryIdAttribute], r));
           }),
         );
-        data = data.flat();
+
+        // Build per-record payloads combining touch values with other updates
+        data = rows.map((row) => {
+          const record = recordMap.get(row.value);
+          const payload: any = {
+            [table.primaryIdAttribute]: row.value,
+            "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
+          };
+
+          evaluatedUpdates.forEach((upd) => {
+            if (upd.setStatus === "Touch") {
+              if (record) {
+                const val = this.getTouchValue(upd, record);
+                if (val !== undefined) {
+                  payload[upd.dbField] = val;
+                }
+              }
+            } else if (upd.onlyDifferent) {
+              if (!record || record[upd.column.logicalName] !== upd.dbValue) {
+                payload[upd.dbField] = upd.dbValue;
+              }
+            } else {
+              payload[upd.dbField] = upd.dbValue;
+            }
+          });
+
+          return payload;
+        });
       } else {
         data = rows.map((row) => {
           return {
             [table.primaryIdAttribute]: row.value,
             "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
-            ...updates.reduce((acc, curr) => {
+            ...evaluatedUpdates.reduce((acc, curr) => {
               acc[curr.dbField] = curr.dbValue;
               return acc;
             }, {} as any),
@@ -316,6 +342,113 @@ export class dvService {
     });
   }
 
+  /**
+   * Get the current record value for a Touch column in the format needed for update
+   */
+  private getTouchValue(upd: UpdateColumn, record: any): any {
+    switch (upd.column.type) {
+      case "Lookup":
+      case "Owner": {
+        const guid = record[`_${upd.column.logicalName}_value`];
+        if (!guid) return null;
+        const setName = upd.column.lookupTargetTable?.setName;
+        if (setName) {
+          return `/${setName}(${guid})`;
+        }
+        return undefined; // Can't construct bind without target table info
+      }
+      default:
+        return record[upd.column.logicalName];
+    }
+  }
+
+  /**
+   * Evaluate calculated column expressions for all records
+   * Returns modified updates with calculated values
+   */
+  private async evaluateCalculatedColumns(
+    table: Table,
+    rows: SelectionValue[],
+    updates: UpdateColumn[],
+  ): Promise<UpdateColumn[]> {
+    const calculatedUpdates = updates.filter((u) => u.setStatus === "Calculated");
+    if (calculatedUpdates.length === 0) {
+      return updates;
+    }
+
+    // Get required fields for calculated columns and evaluation
+    const fieldsNeeded = new Set<string>();
+    calculatedUpdates.forEach((upd) => {
+      // Extract field names from expression template
+      const fieldMatches = upd.expressionTemplate?.match(/\{([a-zA-Z_][a-zA-Z0-9_]*)[^}]*\}/g) || [];
+      fieldMatches.forEach((match) => {
+        const fieldName = match.replace(/[{}|]/g, "").split(".")[0];
+        fieldsNeeded.add(fieldName);
+      });
+    });
+
+    // Fetch records with required fields for calculation
+    if (fieldsNeeded.size > 0) {
+      const fieldsArray = Array.from(fieldsNeeded);
+      const batches: SelectionValue[][] = [];
+      for (let i = 0; i < rows.length; i += this.batchSize) {
+        batches.push(rows.slice(i, i + this.batchSize));
+      }
+
+      const recordMap = new Map<string, any>();
+
+      await Promise.all(
+        batches.map(async (batch) => {
+          const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
+          const attributeString = fieldsArray.map((f) => `<attribute name='${f}'/>`).join("");
+
+          const fetchXML = `<fetch>
+    <entity name="${table.logicalName}">
+    ${attributeString}
+    <filter type="and">
+      <condition attribute="${table.primaryIdAttribute}" operator="in">${rowsString}
+      </condition>
+    </filter>
+    </entity>
+  </fetch>`;
+
+          try {
+            const data = await this.dvApi.fetchXmlQuery(fetchXML);
+            const records = Array.isArray(data?.value) ? data.value : [];
+            records.forEach((record: any) => {
+              recordMap.set(record[table.primaryIdAttribute], record);
+            });
+          } catch (error) {
+            this.onLog(`Error fetching records for calculated columns: ${error}`, "warning");
+          }
+        }),
+      );
+
+      // Evaluate expressions for each record and update calculated columns
+      const updatedUpdates = updates.map((upd) => {
+        if (upd.setStatus === "Calculated" && upd.expressionTemplate) {
+          // Evaluate for each record
+          rows.forEach((row) => {
+            const record = recordMap.get(row.value);
+            if (record) {
+              const result = ExpressionEvaluator.evaluate(upd.expressionTemplate!, { record });
+              if (!result.error && result.value !== undefined) {
+                upd.previewValue = result.value; // Store latest evaluation
+                upd.calculationError = undefined;
+              } else if (result.error) {
+                upd.calculationError = result.error;
+              }
+            }
+          });
+        }
+        return upd;
+      });
+
+      return updatedUpdates;
+    }
+
+    return updates;
+  }
   async getNumericFieldLimits(column: Column, tableLogicalName: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (!this.connection) {

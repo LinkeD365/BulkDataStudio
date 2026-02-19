@@ -168,6 +168,7 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     resizable: true,
     flex: 1,
     wrapText: true,
+    autoHeight: true,
     width: 100,
   };
 

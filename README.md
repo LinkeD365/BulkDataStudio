@@ -12,6 +12,10 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https:/
 - ✅ Bulk delete selected records
 - ✅ Save/Load Job
 - ✅ Allow Edit of FetchXml
+- ✅ Touch per field
+- ✅ Some XrmTokens for calculted fields
+
+
 
 13/02/26
 Added [#14 FetchXml Edit Support](https://github.com/LinkeD365/BulkDataStudio/issues/14)
