@@ -9,6 +9,11 @@ export class UpdateColumn {
   onlyDifferent: boolean = false;
   selectedSelections?: SelectionValue[] = [];
 
+  // Calculated column properties
+  expressionTemplate?: string = ""; // Template for expression-based calculations
+  previewValue?: any = ""; // Preview of calculated value
+  calculationError?: string; // Error message from expression evaluation
+
   constructor(column: Column) {
     this.column = column;
     makeAutoObservable(this);
@@ -34,6 +39,10 @@ export class UpdateColumn {
       } else {
         return this.newValue !== undefined && this.newValue !== null && this.newValue !== "";
       }
+    } else if (this.setStatus === "Calculated") {
+      return !this.calculationError && this.expressionTemplate !== undefined && this.expressionTemplate.trim() !== "";
+    } else if (this.setStatus === "Touch") {
+      return true; // Touch always valid - uses current record value
     }
     return true;
   }
@@ -52,6 +61,9 @@ export class UpdateColumn {
         default:
           return this.newValue;
       }
+    } else if (this.setStatus === "Calculated") {
+      // Return the evaluated preview value for calculated columns
+      return this.previewValue;
     } else {
       return null;
     }
@@ -68,4 +80,4 @@ export class UpdateColumn {
   }
 }
 
-export const SetStatus: string[] = ["Fixed", "Set Null"];
+export const SetStatus: string[] = ["Fixed", "Calculated", "Touch", "Set Null"];

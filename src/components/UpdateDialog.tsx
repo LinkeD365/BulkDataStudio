@@ -38,6 +38,8 @@ export const UpdateDialog = observer((props: UpdateDialogProps): React.JSX.Eleme
           body: `${vm.selectedRows.length} records updated successfully`,
           type: "success",
         });
+        setUpdatingData(false);
+        onDialogClose();
         await utils.delayLoadData(1000);
       })
       .catch((error) => {
@@ -48,8 +50,6 @@ export const UpdateDialog = observer((props: UpdateDialogProps): React.JSX.Eleme
           body: errorMessage,
           type: "error",
         });
-      })
-      .finally(() => {
         setUpdatingData(false);
         onDialogClose();
       });

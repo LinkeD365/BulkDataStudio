@@ -7,6 +7,7 @@ import { UpdateColumn } from "../model/UpdateColumn";
 import { Combobox, Option, Button, Label, Input, Checkbox } from "@fluentui/react-components";
 import { SearchFilled } from "@fluentui/react-icons";
 import { LookupDialog } from "./LookupDialog";
+import { CalculatedValueEditor } from "./CalculatedValueEditor";
 
 interface UpdateValueProps {
   dvSvc: dvService;
@@ -44,9 +45,7 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
       const currentState = vm.updateCols.find((col) => col.column.logicalName === "statecode");
       if (currentState?.selectedSelections && currentState.selectedSelections.length > 0) {
         setPicklistValues(
-          choices.filter(
-            (cv) => cv.parentState?.toString() === currentState!.selectedSelections![0]?.value,
-          ),
+          choices.filter((cv) => cv.parentState?.toString() === currentState!.selectedSelections![0]?.value),
         );
       } else {
         setPicklistValues([]);
@@ -90,7 +89,7 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
 
   const pickList = (
     <Combobox
-      style={{ minWidth: "unset", width: "100%" }}
+      style={{ width: "100%" }}
       placeholder="Select Option"
       value={updateColumn.selectedSelections?.[0]?.label || ""}
       onOptionSelect={(_, data) => {
@@ -199,6 +198,12 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
             onDialogClose={() => setLookupPopupOpen(false)}
           />
         </>
+      )}
+      {updateColumn.setStatus === "Calculated" && (
+        <CalculatedValueEditor dvSvc={dvSvc} vm={vm} updateColumn={updateColumn} onLog={onLog} />
+      )}
+      {updateColumn.setStatus === "Touch" && (
+        <Label style={{ fontStyle: "italic", opacity: 0.7 }}>Current value will be re-applied</Label>
       )}
     </div>
   );

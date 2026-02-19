@@ -366,10 +366,10 @@ body {
   font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 13px;
   line-height: 1.5;
-  background: #0f172a;
-  color: #e2e8f0;
-  border: 1px solid #1f2937;
-  border-radius: 6px;
+  background: #fafafa;
+  color: #242424;
+  border: 1px solid #d1d1d1;
+  border-radius: 4px;
   min-height: 220px;
 }
 
@@ -390,20 +390,63 @@ body {
   margin: 0;
 }
 
+/* Light theme syntax colors (default) */
 .token.tag,
 .token.tag .token.punctuation {
-  color: #7dd3fc;
+  color: #0078d4;
 }
 
 .token.attr-name {
-  color: #fbbf24;
+  color: #b5461d;
 }
 
 .token.attr-value,
 .token.string {
-  color: #86efac;
+  color: #107c10;
 }
 
 .token.punctuation {
-  color: #94a3b8;
+  color: #616161;
+}
+
+/* Dark theme overrides */
+[data-theme="dark"] .fetchxml-editor {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-color: #444;
+}
+
+[data-theme="dark"] .token.tag,
+[data-theme="dark"] .token.tag .token.punctuation {
+  color: #569cd6;
+}
+
+[data-theme="dark"] .token.attr-name {
+  color: #9cdcfe;
+}
+
+[data-theme="dark"] .token.attr-value,
+[data-theme="dark"] .token.string {
+  color: #ce9178;
+}
+
+[data-theme="dark"] .token.punctuation {
+  color: #808080;
+}
+
+/* Allow Fluent UI Combobox/Dropdown to resize within ag-grid cells */
+.ag-cell .fui-Combobox,
+.ag-cell .fui-Dropdown,
+.ag-cell [class*="combobox-fit"] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.ag-cell .fui-Combobox input {
+  min-width: 0 !important;
+}
+
+/* Make Fluent UI Input span the full cell width */
+.ag-cell .fui-Input {
+  min-width: 0 !important;
+  width: 100% !important;
 }
