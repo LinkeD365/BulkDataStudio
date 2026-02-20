@@ -55,8 +55,19 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     } else vm.selectedRows = [];
   }
   React.useEffect(() => {
-    console.log("useEffect for loadData with selectedView");
-    if (utils && vm.selectedView && connection) utils.loadData();
+    if (utils && vm.selectedView && connection) {
+      (async () => {
+        vm.isDataLoading = true;
+        try {
+          await utils.loadData();
+        } catch (error: any) {
+          const message = error && typeof error.message === "string" ? error.message : String(error);
+          onLog(`Error loading data: ${message}`, "error");
+        } finally {
+          vm.isDataLoading = false;
+        }
+      })();
+    }
   }, [connection, utils, vm.selectedView]);
 
   React.useEffect(() => {
@@ -103,6 +114,8 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
               return nameMatch ? nameMatch[1] : "";
             })
             .filter((name) => name !== "");
+        } else {
+          vm.fetchFields = [];
         }
 
         await utils.loadData().catch(async (error: any) => {
@@ -119,14 +132,11 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
   }, [vm.fetchXml]);
 
   const cols = React.useMemo(() => {
-    console.log(vm);
     if ((!vm.selectedView && !vm.fetchXml) || !vm.selectedTable || vm.selectedTable.fields === undefined) {
-      console.log(!vm.selectedView, !vm.fetchXml, !vm.selectedTable, vm.selectedTable?.fields === undefined);
       return [];
     }
 
     if (vm.fetchXml) {
-      console.log("Using fetchXml to determine columns");
       // If no fieldNames in the view, but we have FetchXML, extract fields from FetchXML
       return (
         vm.fetchFields
@@ -144,7 +154,6 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
           .filter((col) => col !== undefined) || []
       );
     }
-    console.log("Using selectedView to determine columns", vm.selectedView?.fieldNames);
     return (
       vm.selectedView?.fieldNames
         ?.filter((fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute)
@@ -168,6 +177,7 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     resizable: true,
     flex: 1,
     wrapText: true,
+    autoHeight: true,
     width: 100,
   };
 

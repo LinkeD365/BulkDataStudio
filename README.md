@@ -1,7 +1,6 @@
 # Bulk Data Studio
 
 Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https://jonasr.app/bdu/) within XrmToolBox.
-Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https://jonasr.app/bdu/) within XrmToolBox.
 
 ## Features
 
@@ -12,6 +11,11 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https:/
 - ✅ Bulk delete selected records
 - ✅ Save/Load Job
 - ✅ Allow Edit of FetchXml
+- ✅ Touch per field
+- ✅ Some XrmTokens for calculated fields
+
+19/02/26
+  - Added [#17 Calculated field support]
 
 13/02/26
  - Added [#14 FetchXml Edit Support](https://github.com/LinkeD365/BulkDataStudio/issues/14)
