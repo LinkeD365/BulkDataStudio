@@ -12,7 +12,7 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https:/
 - ✅ Save/Load Job
 - ✅ Allow Edit of FetchXml
 - ✅ Touch per field
-- ✅ Some XrmTokens for calculted fields
+- ✅ Some XrmTokens for calculated fields
 
 19/02/26
   - Added [#17 Calculated field support]

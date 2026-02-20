@@ -246,10 +246,11 @@ export class dvService {
       const evaluatedUpdates = await this.evaluateCalculatedColumns(table, rows, updates);
 
       const touchUpdates = evaluatedUpdates.filter((u) => u.setStatus === "Touch");
+      const hasCalculatedUpdates = evaluatedUpdates.some((u) => u.setStatus === "Calculated");
       const needsRecordFetch = evaluatedUpdates.some((u) => u.onlyDifferent) || touchUpdates.length > 0;
 
       let data: any[] = [];
-      if (needsRecordFetch) {
+      if (needsRecordFetch || hasCalculatedUpdates) {
         // Determine fields to fetch: touch columns + onlyDifferent columns
         const fieldsToFetch = new Set<string>();
         touchUpdates.forEach((u) => fieldsToFetch.add(u.column.logicalName));
@@ -260,13 +261,14 @@ export class dvService {
         for (let i = 0; i < rows.length; i += this.batchSize) {
           batches.push(rows.slice(i, i + this.batchSize));
         }
-        await Promise.all(
-          batches.map(async (batch) => {
-            const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
-            const attributeString = Array.from(fieldsToFetch)
-              .map((f) => `<attribute name='${f}'/>`)
-              .join("");
-            const fetchXML = `<fetch>
+        if (fieldsToFetch.size > 0) {
+          await Promise.all(
+            batches.map(async (batch) => {
+              const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
+              const attributeString = Array.from(fieldsToFetch)
+                .map((f) => `<attribute name='${f}'/>`)
+                .join("");
+              const fetchXML = `<fetch>
     <entity name="${table.logicalName}">
     ${attributeString}
     <filter type="and">
@@ -275,12 +277,13 @@ export class dvService {
     </filter>
     </entity>
   </fetch>`;
-            const checkData = await this.dvApi.fetchXmlQuery(fetchXML);
-            console.log("Fetched records for update evaluation:", checkData);
-            const records = Array.isArray(checkData?.value) ? checkData.value : [];
-            records.forEach((r: any) => recordMap.set(r[table.primaryIdAttribute], r));
-          }),
-        );
+              const checkData = await this.dvApi.fetchXmlQuery(fetchXML);
+              this.onLog(`Fetched records for update evaluation: ${JSON.stringify(checkData)}`, "info");
+              const records = Array.isArray(checkData?.value) ? checkData.value : [];
+              records.forEach((r: any) => recordMap.set(r[table.primaryIdAttribute], r));
+            }),
+          );
+        }
 
         // Build per-record payloads combining touch values with other updates
         data = rows.map((row) => {
@@ -297,6 +300,11 @@ export class dvService {
                 if (val !== undefined) {
                   payload[upd.dbField] = val;
                 }
+              }
+            } else if (upd.setStatus === "Calculated") {
+              const rowAny = row as any;
+              if (rowAny.updatePayload && rowAny.updatePayload[upd.dbField] !== undefined) {
+                payload[upd.dbField] = rowAny.updatePayload[upd.dbField];
               }
             } else if (upd.onlyDifferent) {
               if (!record || record[upd.column.logicalName] !== upd.dbValue) {
@@ -380,10 +388,21 @@ export class dvService {
     const fieldsNeeded = new Set<string>();
     calculatedUpdates.forEach((upd) => {
       // Extract field names from expression template
-      const fieldMatches = upd.expressionTemplate?.match(/\{([a-zA-Z_][a-zA-Z0-9_]*)[^}]*\}/g) || [];
+      const fieldMatches = upd.expressionTemplate?.match(/\{[^}]+\}/g) || [];
       fieldMatches.forEach((match) => {
-        const fieldName = match.replace(/[{}|]/g, "").split(".")[0];
-        fieldsNeeded.add(fieldName);
+        const inner = match.slice(1, -1);
+        const [fieldPart] = inner.split("|", 1);
+        if (fieldPart.includes(".")) {
+          this.onLog(
+            `Calculated expression contains navigation field "${fieldPart}". Related entity fields are not auto-fetched; ensure required data is pre-loaded.`,
+            "warning",
+          );
+          return;
+        }
+        const fieldName = fieldPart.trim();
+        if (fieldName) {
+          fieldsNeeded.add(fieldName);
+        }
       });
     });
 
@@ -427,19 +446,29 @@ export class dvService {
       // Evaluate expressions for each record and update calculated columns
       const updatedUpdates = updates.map((upd) => {
         if (upd.setStatus === "Calculated" && upd.expressionTemplate) {
-          // Evaluate for each record
+          let firstSuccessfulValue: any = undefined;
           rows.forEach((row) => {
             const record = recordMap.get(row.value);
             if (record) {
               const result = ExpressionEvaluator.evaluate(upd.expressionTemplate!, { record });
               if (!result.error && result.value !== undefined) {
-                upd.previewValue = result.value; // Store latest evaluation
+                const rowAny = row as any;
+                rowAny.updatePayload = rowAny.updatePayload || {};
+                rowAny.updatePayload[upd.dbField] = result.value;
+
+                if (firstSuccessfulValue === undefined) {
+                  firstSuccessfulValue = result.value;
+                }
                 upd.calculationError = undefined;
               } else if (result.error) {
                 upd.calculationError = result.error;
               }
             }
           });
+
+          if (firstSuccessfulValue !== undefined) {
+            upd.previewValue = firstSuccessfulValue;
+          }
         }
         return upd;
       });

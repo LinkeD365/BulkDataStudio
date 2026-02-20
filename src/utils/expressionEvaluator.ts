@@ -80,7 +80,7 @@ export class ExpressionEvaluator {
   private static processColumnTokens(template: string, context: EvaluationContext): string {
     const columnRegex = /\{([a-zA-Z_][a-zA-Z0-9_\.]*)\|?(raw)?\}/g;
 
-    return template.replace(columnRegex, (_match, fieldName, _pipe, rawFlag) => {
+    return template.replace(columnRegex, (_match, fieldName, rawFlag) => {
       const value = this.getFieldValue(fieldName, context.record);
 
       if (value === null || value === undefined) {
@@ -210,13 +210,13 @@ export class ExpressionEvaluator {
   private static processMathExpressions(template: string, _context: EvaluationContext): string {
     const mathRegex = /<math\|([+\-*/])\|([0-9.]+)>/g;
 
-    return template.replace(mathRegex, (match, operator, value) => {
+    return template.replace(mathRegex, (match, operator, value, offset) => {
       try {
         const num = parseFloat(value);
         if (isNaN(num)) return match;
 
         // Extract the number before this match to apply operation
-        const lastNumMatch = template.substring(0, template.indexOf(match)).match(/[\d.]+$/);
+        const lastNumMatch = template.substring(0, offset).match(/[\d.]+$/);
         if (lastNumMatch) {
           const lastNum = parseFloat(lastNumMatch[0]);
           let result = lastNum;
@@ -232,6 +232,9 @@ export class ExpressionEvaluator {
               result = lastNum * num;
               break;
             case "/":
+              if (num === 0) {
+                return match;
+              }
               result = lastNum / num;
               break;
           }
@@ -267,8 +270,14 @@ export class ExpressionEvaluator {
     // <Trim|chars> - trim characters (or whitespace) from the preceding segment
     result = result.replace(/([^<]*)<Trim(?:\|([^>]+))?>/gi, (_m, before: string, chars?: string) => {
       if (chars) {
-        const escaped = chars.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-        return before.replace(new RegExp(`[${escaped}]`, "g"), "");
+        const charsSet = new Set(chars.split(""));
+        let filtered = "";
+        for (const ch of before) {
+          if (!charsSet.has(ch)) {
+            filtered += ch;
+          }
+        }
+        return filtered;
       }
       return before.trim();
     });
@@ -293,13 +302,23 @@ export class ExpressionEvaluator {
   }
 
   /**
-   * Process <Replace|old|new> for string replacement
+   * Process <Replace|old|new> for string replacement.
+   * Applies the replacement only to the text segment preceding the tag,
+   * consistent with other formatting functions.
    */
   private static processReplacements(template: string, _context: EvaluationContext): string {
-    const replaceRegex = /<Replace\|([^|]+)\|([^>]*)>/g;
+    const replaceRegex = /([^<]*)<Replace\|([^|]+)\|([^>]*)>/g;
 
-    return template.replace(replaceRegex, (_match, oldVal, newVal) => {
-      return template.replace(new RegExp(oldVal.trim(), "g"), newVal.trim());
+    return template.replace(replaceRegex, (_match, before, oldVal, newVal) => {
+      const oldText = oldVal.trim();
+      const newText = newVal.trim();
+
+      if (!oldText) {
+        return before;
+      }
+
+      const escapedOldVal = oldText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return before.replace(new RegExp(escapedOldVal, "g"), newText);
     });
   }
 

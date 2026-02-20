@@ -189,7 +189,7 @@ Perform calculations on numeric values:
 - **Reference non-existent fields** - They'll be treated as empty strings
 - **Create circular logic** - Don't reference fields you're updating
 - **Assume data format** - Verify field types before calculations
-- **Overcomplicat expressions** - Keep templates readable and maintainable
+- **Overcomplicate expressions** - Keep templates readable and maintainable
 
 ## Integration with Bulk Operations
 

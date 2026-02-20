@@ -108,10 +108,10 @@ export const CalculatedValueEditor = observer((props: CalculatedValueEditorProps
       const newTemplate = before + token + after;
       handleTemplateChange(newTemplate);
 
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         textarea.selectionStart = textarea.selectionEnd = start + token.length;
         textarea.focus();
-      }, 0);
+      });
     }
   };
 
