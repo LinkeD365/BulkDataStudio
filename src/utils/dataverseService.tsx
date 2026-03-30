@@ -2,6 +2,8 @@ import { UpdateColumn } from "../model/UpdateColumn";
 import { Column, SelectionValue, Table, View } from "../model/vm";
 import { ExpressionEvaluator } from "./expressionEvaluator";
 
+const DEFAULT_FETCH_LIMIT = 250;
+
 interface dvServiceProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvApi: DataverseAPI.API;
@@ -99,7 +101,7 @@ export class dvService {
           `No public views found for table ${table.displayName} — generating default "All Records" view`,
           "warning",
         );
-        const defaultFetchXml = `<fetch><entity name="${table.logicalName}"><attribute name="${table.primaryIdAttribute}"/><attribute name="${table.primaryNameAttribute}"/></entity></fetch>`;
+        const defaultFetchXml = `<fetch count="${DEFAULT_FETCH_LIMIT}" no-lock="true"><entity name="${table.logicalName}"><attribute name="${table.primaryIdAttribute}"/><attribute name="${table.primaryNameAttribute}"/><order attribute="${table.primaryNameAttribute}" descending="false"/></entity></fetch>`;
         views.push(new View("default-all-records", "All Records", defaultFetchXml));
       }
 

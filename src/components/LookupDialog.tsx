@@ -53,34 +53,39 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
 
   React.useEffect(() => {
     const loadViews = async () => {
-      if (updateField.column.type === "Lookup" && !updateField.column.lookupTargetTable) {
-        await dvSvc
-          .getLookupTargetTable(vm.selectedTable!.logicalName, updateField.column.logicalName)
-          .then(async (lookupTable) => {
-            updateField.column.lookupTargetTable = vm.tables.find((t) => t.logicalName === lookupTable); // Assign the found table to the
+      if (updateField.column.type === "Lookup") {
+        if (!updateField.column.lookupTargetTable) {
+          await dvSvc
+            .getLookupTargetTable(vm.selectedTable!.logicalName, updateField.column.logicalName)
+            .then(async (lookupTable) => {
+              updateField.column.lookupTargetTable = vm.tables.find((t) => t.logicalName === lookupTable); // Assign the found table to the
 
-            if (updateField.column.lookupTargetTable && !updateField.column.lookupTargetTable.views) {
-              await dvSvc.getViews(updateField.column.lookupTargetTable!).then((views) => {
-                updateField.column.lookupTargetTable!.views = views;
-              });
-            }
-            if (updateField.column.lookupTargetTable && !updateField.column.lookupTargetTable.fields) {
-              await dvSvc.getFields(updateField.column.lookupTargetTable.logicalName).then((fields) => {
-                updateField.column.lookupTargetTable!.fields = fields;
-              });
-            }
+              if (updateField.column.lookupTargetTable && !updateField.column.lookupTargetTable.views) {
+                await dvSvc.getViews(updateField.column.lookupTargetTable!).then((views) => {
+                  updateField.column.lookupTargetTable!.views = views;
+                });
+              }
+              if (updateField.column.lookupTargetTable && !updateField.column.lookupTargetTable.fields) {
+                await dvSvc.getFields(updateField.column.lookupTargetTable.logicalName).then((fields) => {
+                  updateField.column.lookupTargetTable!.fields = fields;
+                });
+              }
+            })
+            .catch((error) => {
+              onLog(`Error loading lookup target table: ${error.message}`, "error");
+            });
+        }
 
-            // Auto-select the view when there is only one option (e.g. fallback "All Records")
-            const views = updateField.column.lookupTargetTable?.views;
-            if (views && views.length === 1) {
-              setLocalSelectedView(views[0]);
-            }
-          })
-          .catch((error) => {
-            onLog(`Error loading lookup target table: ${error.message}`, "error");
-          });
+        // Auto-select the sole view whenever views are available and none is selected yet.
+        // This handles both first-load and pre-loaded (config-restored) scenarios.
+        const views = updateField.column.lookupTargetTable?.views;
+        if (views && views.length === 1 && !localSelectedView) {
+          setLocalSelectionValue(undefined);
+          setLocalSelectedView(views[0]);
+        }
       } else if (updateField.column.type === "Owner") {
         setLocalSelectedView(undefined);
+        setLocalSelectionValue(undefined);
         let localOwnerTable: Table | undefined;
         if (ownerType === "User") {
           localOwnerTable = vm.tables.find((t) => t.logicalName === "systemuser");
@@ -100,9 +105,10 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
           });
         }
 
-        // Auto-select the view when there is only one option (e.g. fallback "All Records")
+        // Auto-select the sole view (e.g. fallback "All Records")
         const views = localOwnerTable?.views;
         if (views && views.length === 1) {
+          setLocalSelectionValue(undefined);
           setLocalSelectedView(views[0]);
         }
       }
@@ -153,6 +159,7 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
         ));
 
   const onViewSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
+    setLocalSelectionValue(undefined);
     if (updateField.column.type === "Owner") {
       setLocalSelectedView(ownerTable!.views!.find((view) => view.id === (data.optionValue as string))!);
     } else {
@@ -248,7 +255,12 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
               </Field>
             )}
             <Field label="Select a view">
-              <Combobox placeholder="Select a View" onOptionSelect={onViewSelect}>
+              <Combobox
+                placeholder="Select a View"
+                value={localSelectedView?.label ?? ""}
+                selectedOptions={localSelectedView ? [localSelectedView.id] : []}
+                onOptionSelect={onViewSelect}
+              >
                 {viewsList}
               </Combobox>
             </Field>
