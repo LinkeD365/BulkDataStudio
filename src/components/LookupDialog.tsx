@@ -69,6 +69,12 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
                 updateField.column.lookupTargetTable!.fields = fields;
               });
             }
+
+            // Auto-select the view when there is only one option (e.g. fallback "All Records")
+            const views = updateField.column.lookupTargetTable?.views;
+            if (views && views.length === 1) {
+              setLocalSelectedView(views[0]);
+            }
           })
           .catch((error) => {
             onLog(`Error loading lookup target table: ${error.message}`, "error");
@@ -92,6 +98,12 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
           await dvSvc.getFields(localOwnerTable.logicalName).then((fields) => {
             localOwnerTable.fields = fields;
           });
+        }
+
+        // Auto-select the view when there is only one option (e.g. fallback "All Records")
+        const views = localOwnerTable?.views;
+        if (views && views.length === 1) {
+          setLocalSelectedView(views[0]);
         }
       }
     };
