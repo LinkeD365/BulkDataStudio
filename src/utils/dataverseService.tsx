@@ -2,6 +2,8 @@ import { UpdateColumn } from "../model/UpdateColumn";
 import { Column, SelectionValue, Table, View } from "../model/vm";
 import { ExpressionEvaluator } from "./expressionEvaluator";
 
+const DEFAULT_FETCH_LIMIT = 250;
+
 interface dvServiceProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvApi: DataverseAPI.API;
@@ -92,6 +94,17 @@ export class dvService {
             fetchXml: rec.fetchxml ?? rec.fetchXml ?? "",
           }) as View,
       );
+      if (views.length === 0) {
+        // Fallback: generate a default "All Records" view for entities with no public views
+        // (e.g. processstage, which backs the Active Stage BPF lookup on Opportunity)
+        this.onLog(
+          `No public views found for table ${table.displayName} — generating default "All Records" view`,
+          "warning",
+        );
+        const defaultFetchXml = `<fetch count="${DEFAULT_FETCH_LIMIT}" no-lock="true"><entity name="${table.logicalName}"><attribute name="${table.primaryIdAttribute}"/><attribute name="${table.primaryNameAttribute}"/><order attribute="${table.primaryNameAttribute}" descending="false"/></entity></fetch>`;
+        views.push(new View("default-all-records", "All Records", defaultFetchXml));
+      }
+
       this.onLog(`Loaded ${views.length} views for table ${table.displayName}`, "success");
 
       return views;
