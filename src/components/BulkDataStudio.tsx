@@ -25,7 +25,7 @@ import React from "react";
 import { ViewSelector } from "./ViewSelector";
 import { DataGrid } from "./DataGrid";
 import { Allotment } from "allotment";
-// @ts-ignore - allotment/dist/style.css type declarations not available
+// @ts-expect-error - allotment/dist/style.css type declarations not available
 import "allotment/dist/style.css";
 import { DataUpdate } from "./DataUpdate";
 import { utilService } from "../utils/utils";
