@@ -3,6 +3,7 @@
   "version": "0.5.1",
   "displayName": "Bulk Data Studio",
   "description": "Bulk Data Studio is a Power Platform ToolBox tool that allows users to perform bulk data operations in Microsoft Dataverse environments.",
+  "icon": "Linked365Logo.svg",
   "main": "index.html",
   "author": "LinkeD365",
   "license": "MIT",
@@ -22,8 +23,7 @@
   "configurations": {
     "repository": "https://github.com/LinkeD365/BulkDataStudio",
     "website": "https://linked365.blog",
-    "readmeUrl": "https://raw.githubusercontent.com/LinkeD365/BulkDataStudio/refs/heads/main/README.md",
-    "iconUrl": "https://raw.githubusercontent.com/LinkeD365/BulkDataStudio/refs/heads/main/assets/smallIcon.png"
+    "readmeUrl": "https://raw.githubusercontent.com/LinkeD365/BulkDataStudio/refs/heads/main/README.md"
   },
   "repository": {
     "type": "git",
