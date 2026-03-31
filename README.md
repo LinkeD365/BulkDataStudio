@@ -14,23 +14,29 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https:/
 - ✅ Touch per field
 - ✅ Some XrmTokens for calculated fields
 
+30/03/26
+- Fixed [#33 Does not load active stage](https://github.com/LinkeD365/BulkDataStudio/issues/33)
+
 19/02/26
-  - Added [#17 Calculated field support]
+
+- Added [#17 Calculated field support](https://github.com/LinkeD365/BulkDataStudio/issues/17)
 
 13/02/26
- - Added [#14 FetchXml Edit Support](https://github.com/LinkeD365/BulkDataStudio/issues/14)
+
+- Added [#14 FetchXml Edit Support](https://github.com/LinkeD365/BulkDataStudio/issues/14)
 
 25-Jan-26
- - Fixed bug with logging
- - [#20](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
+
+- Fixed bug with logging
+- [#20](https://github.com/LinkeD365/BulkDataStudio/issues/20) Thanks @Ghitafjorback
 
 23-Jan-26
 
- - Added bulk delete & save config functionality
+- Added bulk delete & save config functionality
 
 19-Jan-26
 
- - Added Status and Ownership updates and fixed bugs around view selection
+- Added Status and Ownership updates and fixed bugs around view selection
 
 ## License
 
