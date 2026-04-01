@@ -3,6 +3,8 @@ import { Column, SelectionValue, Table, View } from "../model/vm";
 import { ExpressionEvaluator } from "./expressionEvaluator";
 
 const DEFAULT_FETCH_LIMIT = 250;
+export const DEFAULT_BATCH_SIZE = 2;
+export const BATCH_SIZE_STORAGE_KEY = "bulkDataStudio_batchSize";
 
 interface dvServiceProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -13,11 +15,14 @@ export class dvService {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvApi: DataverseAPI.API;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
-  batchSize = 2;
+  batchSize: number;
   constructor(props: dvServiceProps) {
     this.connection = props.connection;
     this.dvApi = props.dvApi;
     this.onLog = props.onLog;
+    const stored = localStorage.getItem(BATCH_SIZE_STORAGE_KEY);
+    const parsed = stored !== null ? parseInt(stored, 10) : NaN;
+    this.batchSize = !isNaN(parsed) && parsed > 0 ? parsed : DEFAULT_BATCH_SIZE;
   }
 
   async getTables(): Promise<Table[]> {

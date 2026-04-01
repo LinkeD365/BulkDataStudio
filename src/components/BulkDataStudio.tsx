@@ -20,6 +20,7 @@ import {
   DeleteFilled,
   SaveFilled,
   FolderOpenFilled,
+  SettingsFilled,
 } from "@fluentui/react-icons";
 import React from "react";
 import { ViewSelector } from "./ViewSelector";
@@ -31,6 +32,7 @@ import { DataUpdate } from "./DataUpdate";
 import { utilService } from "../utils/utils";
 import { UpdateColumn } from "../model/UpdateColumn";
 import { FetchXmlEditorDialog } from "./FetchXmlEditorDialog";
+import { SettingsDialog } from "./SettingsDialog";
 
 interface BulkDataStudioProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -42,6 +44,7 @@ interface BulkDataStudioProps {
 
 export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.Element => {
   const { connection, dvSvc, vm, utils, onLog } = props;
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
 
   function updateData(): void {
     if (vm.updateCols.length === 0) {
@@ -333,6 +336,14 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
               disabled={vm.selectedRows.length === 0}
             />
           </Tooltip>
+          <Tooltip content="Settings" relationship="label">
+            <Button
+              icon={<SettingsFilled />}
+              onClick={() => {
+                setSettingsOpen(true);
+              }}
+            />
+          </Tooltip>
         </ToolbarGroup>
       </Toolbar>
     </div>
@@ -342,6 +353,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
       {toolbar}
       {vm.viewSelectorOpen && <ViewSelector dvSvc={dvSvc} vm={vm} onLog={onLog} />}
       {vm.fetchXmlEditorOpen && <FetchXmlEditorDialog vm={vm} onLog={onLog} />}
+      {settingsOpen && <SettingsDialog dvSvc={dvSvc} open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
       <div style={{ height: "94vh" }}>
         <Allotment defaultSizes={[100, 200]}>
           <Allotment.Pane minSize={200}>
