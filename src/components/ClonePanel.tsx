@@ -42,7 +42,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
   const { vm, dvSvc, utils, onLog } = props;
   const [loadingPanelData, setLoadingPanelData] = React.useState(false);
   const [cloning, setCloning] = React.useState(false);
-  const [lookupFieldOptions, setLookupFieldOptions] = React.useState<Record<number, Column[]>>({});
+  const [lookupFieldOptions, setLookupFieldOptions] = React.useState<Record<string, Column[]>>({});
   const [activeTab, setActiveTab] = React.useState<"exclude" | "children">("exclude");
   const [parentFieldQuery, setParentFieldQuery] = React.useState("");
   const [childTables, setChildTables] = React.useState<Table[]>([]);
@@ -148,9 +148,9 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
     });
   }, [parentFields, parentFieldQuery]);
 
-  const loadLookupFieldOptions = async (config: CloneChildConfig, index: number): Promise<void> => {
+  const loadLookupFieldOptions = async (config: CloneChildConfig): Promise<void> => {
     if (!config.childTableLogicalName || !vm.selectedTable) {
-      setLookupFieldOptions((prev) => ({ ...prev, [index]: [] }));
+      setLookupFieldOptions((prev) => ({ ...prev, [config.id]: [] }));
       return;
     }
 
@@ -158,7 +158,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
       childTables.find((t) => t.logicalName === config.childTableLogicalName) ||
       vm.tables.find((t) => t.logicalName === config.childTableLogicalName);
     if (!childTable) {
-      setLookupFieldOptions((prev) => ({ ...prev, [index]: [] }));
+      setLookupFieldOptions((prev) => ({ ...prev, [config.id]: [] }));
       return;
     }
 
@@ -199,7 +199,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
       }
     }
 
-    setLookupFieldOptions((prev) => ({ ...prev, [index]: matchingLookups }));
+    setLookupFieldOptions((prev) => ({ ...prev, [config.id]: matchingLookups }));
 
     if (matchingLookups.length === 1) {
       config.setLookupField(matchingLookups[0].logicalName, matchingLookups[0].schemaName);
@@ -215,16 +215,13 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
     vm.cloneChildConfigs.push(new CloneChildConfig());
   };
 
-  const removeChildConfig = (index: number) => {
+  const removeChildConfig = (config: CloneChildConfig) => {
+    const index = vm.cloneChildConfigs.indexOf(config);
+    if (index === -1) return;
     vm.cloneChildConfigs.splice(index, 1);
     setLookupFieldOptions((prev) => {
-      const updated: Record<number, Column[]> = {};
-      Object.keys(prev)
-        .map((k) => Number(k))
-        .filter((k) => k !== index)
-        .forEach((k) => {
-          updated[k > index ? k - 1 : k] = prev[k];
-        });
+      const updated = { ...prev };
+      delete updated[config.id];
       return updated;
     });
   };
@@ -404,7 +401,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
                           const childKeySet = new Set(
                             selectedChildTable ? keyFieldsByTable[selectedChildTable.logicalName] || [] : [],
                           );
-                          const lookupOptions = lookupFieldOptions[index] || [];
+                          const lookupOptions = lookupFieldOptions[config.id] || [];
                           const selectedLookup = lookupOptions.find(
                             (f) => f.logicalName === config.parentLookupFieldLogicalName,
                           );
@@ -422,7 +419,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
 
                           return (
                             <div
-                              key={`child-${index}`}
+                              key={config.id}
                               style={{
                                 border: "1px solid var(--colorNeutralStroke2)",
                                 borderRadius: "8px",
@@ -436,8 +433,9 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
                                 <Text weight="semibold">Child Table #{index + 1}</Text>
                                 <Button
                                   appearance="subtle"
+                                  aria-label="Remove child table"
                                   icon={<Delete24Regular />}
-                                  onClick={() => removeChildConfig(index)}
+                                  onClick={() => removeChildConfig(config)}
                                 />
                               </div>
 
@@ -446,7 +444,6 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
                                 selectedOptions={config.childTableLogicalName ? [config.childTableLogicalName] : []}
                                 button={<span>{selectedChildTableText || "Select child table"}</span>}
                                 onOptionSelect={async (_, data) => {
-                                  console.log("table:", childTables, "selected:", data.optionValue);
                                   const nextChildTable = data.optionValue || "";
                                   if (!nextChildTable || nextChildTable === config.childTableLogicalName) {
                                     return;
@@ -454,7 +451,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
                                   config.setChildTable(nextChildTable);
                                   config.setLookupField("");
                                   config.setExcludedFields([]);
-                                  await loadLookupFieldOptions(config, index);
+                                  await loadLookupFieldOptions(config);
                                 }}
                               >
                                 {childTables.map((table) => (
@@ -529,7 +526,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
                                     const checked = config.excludedFields.includes(field.logicalName);
                                     return (
                                       <div
-                                        key={`${index}-${field.logicalName}`}
+                                        key={`${config.id}-${field.logicalName}`}
                                         style={{
                                           padding: "5px 6px",
                                           borderRadius: "6px",

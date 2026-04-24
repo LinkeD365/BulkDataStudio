@@ -1,6 +1,8 @@
 import { makeAutoObservable, makeObservable, observable, action } from "mobx";
 import { UpdateColumn } from "./UpdateColumn";
 
+let _cloneChildConfigCounter = 0;
+
 export class ViewModel {
   viewSelectorOpen: boolean = false;
   tables: Table[] = [];
@@ -26,6 +28,7 @@ export class ViewModel {
 }
 
 export class CloneChildConfig {
+  readonly id: string = `clone-child-${++_cloneChildConfigCounter}`;
   childTableLogicalName: string = "";
   parentLookupFieldLogicalName: string = "";
   parentLookupFieldSchemaName: string = "";
@@ -106,6 +109,7 @@ export class Column {
   displayName: string;
   type: string;
   primaryKey: boolean;
+  isValidForCreate: boolean;
   choiceValues?: SelectionValue[];
   lookupTargetTable?: Table;
   minValue?: number;
@@ -121,6 +125,7 @@ export class Column {
     primaryKey: boolean = false,
     schemaName?: string,
     isCustom: boolean = false,
+    isValidForCreate: boolean = true,
   ) {
     this.logicalName = logicalName;
     this.schemaName = schemaName || logicalName;
@@ -128,6 +133,7 @@ export class Column {
     this.displayName = displayName;
     this.type = type;
     this.primaryKey = primaryKey;
+    this.isValidForCreate = isValidForCreate;
   }
 
   get dataName(): string {

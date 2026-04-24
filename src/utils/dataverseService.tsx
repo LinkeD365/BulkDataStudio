@@ -98,11 +98,17 @@ export class dvService {
         payload[field.logicalName] = record[field.logicalName];
       }
     }
-    console.log("Created clone payload for record", record, ":", payload);
     return payload;
   }
 
   async getAlternateKeyFieldNames(tableLogicalName: string): Promise<Set<string>> {
+    if (!this.connection) {
+      this.onLog(
+        `No connection available for loading alternate keys for ${tableLogicalName}`,
+        "warning",
+      );
+      return new Set<string>();
+    }
     try {
       const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Keys?$select=KeyAttributes`;
       const keysMeta: any = await this.dvApi.queryData(url);
@@ -152,7 +158,8 @@ export class dvService {
     const parentCloneFields = (parentTable.fields || [])
       .filter((field) => !skippedSet.has(field.logicalName))
       .filter((field) => this.isCloneSupportedFieldType(field))
-      .filter((field) => field.logicalName !== parentTable.primaryIdAttribute);
+      .filter((field) => field.logicalName !== parentTable.primaryIdAttribute)
+      .filter((field) => field.isValidForCreate);
 
     const parentFieldNames = parentCloneFields.map((field) => field.logicalName);
 
@@ -206,6 +213,13 @@ export class dvService {
     const effectiveChildConfigs = childConfigs.filter(
       (cfg) => cfg.childTableLogicalName && cfg.parentLookupFieldLogicalName,
     );
+
+    if (effectiveChildConfigs.length > 0 && !parentTable.setName) {
+      const msg = `Entity set name not found for parent table '${parentTable.logicalName}'. Child records cannot be cloned.`;
+      this.onLog(msg, "error");
+      throw new Error(msg);
+    }
+
     for (const childConfig of effectiveChildConfigs) {
       const childTable = allTables.find((t) => t.logicalName === childConfig.childTableLogicalName);
       if (!childTable) {
@@ -229,7 +243,8 @@ export class dvService {
       const childCloneFields = childTable.fields
         .filter((field) => !childSkippedSet.has(field.logicalName))
         .filter((field) => this.isCloneSupportedFieldType(field))
-        .filter((field) => field.logicalName !== childTable.primaryIdAttribute);
+        .filter((field) => field.logicalName !== childTable.primaryIdAttribute)
+        .filter((field) => field.isValidForCreate);
 
       const childFieldNames = childCloneFields.map((field) => field.logicalName);
 
@@ -247,7 +262,6 @@ export class dvService {
 
         const childData = await this.dvApi.fetchXmlQuery(childFetchXml);
         const childRecords = Array.isArray(childData?.value) ? childData.value : [];
-        console.log("Child records to clone for parent ID", oldParentId, ":", childRecords);
         for (const childRecord of childRecords) {
           const childPayload = await this.createClonePayloadFromRecord(
             childTable.logicalName,
@@ -262,7 +276,6 @@ export class dvService {
             ? childConfig.parentLookupFieldSchemaName || childConfig.parentLookupFieldLogicalName
             : childConfig.parentLookupFieldLogicalName;
           childPayload[`${lookupBindName}@odata.bind`] = `/${parentTable.setName}(${newParentId})`;
-          console.log("Creating child record with payload:", childPayload);
           await this.dvApi.create(childTable.logicalName, childPayload);
           childCloned += 1;
         }
@@ -451,7 +464,7 @@ export class dvService {
     }
 
     try {
-      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes?$select=LogicalName,SchemaName,DisplayName,AttributeType,IsPrimaryId,IsCustomAttribute&$filter=IsValidForUpdate eq true`;
+      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes?$select=LogicalName,SchemaName,DisplayName,AttributeType,IsPrimaryId,IsCustomAttribute,IsValidForCreate&$filter=IsValidForUpdate eq true`;
       const metadataAlt: any = await this.dvApi.queryData(url);
       const fields = (Array.isArray(metadataAlt?.value) ? metadataAlt.value : [])
         .map(
@@ -463,6 +476,7 @@ export class dvService {
               attr.IsPrimaryId,
               attr.SchemaName,
               !!attr.IsCustomAttribute,
+              attr.IsValidForCreate !== false,
             ),
         )
         .sort((a: any, b: any) => a.displayName.localeCompare(b.displayName));

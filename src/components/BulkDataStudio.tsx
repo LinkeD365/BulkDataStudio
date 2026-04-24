@@ -335,7 +335,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
               Add Config
             </Button>
           </Tooltip>
-          <Tooltip content="Update Selected rows with configured values" relationship="label">
+          <Tooltip content="Clone selected rows" relationship="label">
             <Button
               icon={<CopyFilled />}
               onClick={() => {
