@@ -17,10 +17,11 @@ import "prismjs/components/prism-markup";
 interface FetchXmlEditorDialogProps {
   vm: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
+  onLoad?: () => void;
 }
 
 export const FetchXmlEditorDialog = observer((props: FetchXmlEditorDialogProps): React.JSX.Element => {
-  const { vm } = props;
+  const { vm, onLoad } = props;
   const [localFetchXml, setLocalFetchXml] = React.useState<string>(vm.fetchXml || "");
 
   React.useEffect(() => {
@@ -32,6 +33,7 @@ export const FetchXmlEditorDialog = observer((props: FetchXmlEditorDialogProps):
   const handleSave = () => {
     vm.fetchXml = localFetchXml;
     vm.fetchXmlEditorOpen = false;
+    onLoad?.();
   };
 
   const handleCancel = () => {
@@ -64,7 +66,7 @@ export const FetchXmlEditorDialog = observer((props: FetchXmlEditorDialogProps):
             Cancel
           </Button>
           <Button appearance="primary" onClick={handleSave}>
-            Save
+            Load Data
           </Button>
         </DialogActions>
       </DialogSurface>
