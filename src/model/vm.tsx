@@ -1,5 +1,7 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, makeObservable, observable, action } from "mobx";
 import { UpdateColumn } from "./UpdateColumn";
+
+let _cloneChildConfigCounter = 0;
 
 export class ViewModel {
   viewSelectorOpen: boolean = false;
@@ -17,8 +19,43 @@ export class ViewModel {
   fetchXmlEditorOpen: boolean = false;
   fetchXml?: string;
   fetchFields: string[] = [];
+  clonePanelOpen: boolean = false;
+  cloneSkippedFields: string[] = [];
+  cloneChildConfigs: CloneChildConfig[] = [];
   constructor() {
     makeAutoObservable(this);
+  }
+}
+
+export class CloneChildConfig {
+  readonly id: string = `clone-child-${++_cloneChildConfigCounter}`;
+  childTableLogicalName: string = "";
+  parentLookupFieldLogicalName: string = "";
+  parentLookupFieldSchemaName: string = "";
+  excludedFields: string[] = [];
+
+  constructor(init?: Partial<CloneChildConfig>) {
+    makeObservable(this, {
+      childTableLogicalName: observable,
+      parentLookupFieldLogicalName: observable,
+      parentLookupFieldSchemaName: observable,
+      excludedFields: observable,
+      setChildTable: action,
+      setLookupField: action,
+      setExcludedFields: action,
+    });
+    Object.assign(this, init);
+  }
+
+  setChildTable(value: string) {
+    this.childTableLogicalName = value;
+  }
+  setLookupField(value: string, schemaName?: string) {
+    this.parentLookupFieldLogicalName = value;
+    this.parentLookupFieldSchemaName = schemaName || value;
+  }
+  setExcludedFields(value: string[]) {
+    this.excludedFields = value;
   }
 }
 
@@ -67,9 +104,12 @@ export class View {
 
 export class Column {
   logicalName: string;
+  schemaName: string;
+  isCustom: boolean;
   displayName: string;
   type: string;
   primaryKey: boolean;
+  isValidForCreate: boolean;
   choiceValues?: SelectionValue[];
   lookupTargetTable?: Table;
   minValue?: number;
@@ -78,11 +118,22 @@ export class Column {
   maxLength?: number;
   format?: string;
 
-  constructor(logicalName: string, displayName: string, type: string, primaryKey: boolean = false) {
+  constructor(
+    logicalName: string,
+    displayName: string,
+    type: string,
+    primaryKey: boolean = false,
+    schemaName?: string,
+    isCustom: boolean = false,
+    isValidForCreate: boolean = true,
+  ) {
     this.logicalName = logicalName;
+    this.schemaName = schemaName || logicalName;
+    this.isCustom = isCustom;
     this.displayName = displayName;
     this.type = type;
     this.primaryKey = primaryKey;
+    this.isValidForCreate = isValidForCreate;
   }
 
   get dataName(): string {

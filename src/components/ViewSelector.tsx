@@ -133,7 +133,7 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
 
   const onTableSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
     vm.selectedTable = vm.tables.find((table) => table.logicalName === (data.optionValue as string));
-    setQuery(vm.selectedTable?.displayName || "");
+    setQuery(vm.selectedTable ? `${vm.selectedTable.displayName} (${vm.selectedTable.logicalName})` : "");
   };
 
   const onViewSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
@@ -150,7 +150,7 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
   };
 
   const tablesList = vm.tables.map((table) => ({
-    children: table.displayName,
+    children: `${table.displayName} (${table.logicalName})`,
     value: table.logicalName,
   }));
   const children = useComboboxFilter(query, tablesList, { noOptionsMessage: "No tables found" });
@@ -187,7 +187,7 @@ export const ViewSelector = observer((props: BulkDataStudioProps): React.JSX.Ele
                 ))}
               </Combobox>
             </Field>
-            <Field label="FetchXML" >
+            <Field label="FetchXML">
               <Editor
                 value={localFetchXml}
                 onValueChange={(value) => {

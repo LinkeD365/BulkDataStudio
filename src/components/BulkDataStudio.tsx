@@ -12,6 +12,7 @@ import {
   ToolbarGroup,
   Button,
   Tooltip,
+  Spinner,
 } from "@fluentui/react-components";
 import {
   AddSquareFilled,
@@ -20,6 +21,7 @@ import {
   DeleteFilled,
   SaveFilled,
   FolderOpenFilled,
+  CopyFilled,
 } from "@fluentui/react-icons";
 import React from "react";
 import { ViewSelector } from "./ViewSelector";
@@ -31,6 +33,7 @@ import { DataUpdate } from "./DataUpdate";
 import { utilService } from "../utils/utils";
 import { UpdateColumn } from "../model/UpdateColumn";
 import { FetchXmlEditorDialog } from "./FetchXmlEditorDialog";
+import { ClonePanel } from "./ClonePanel";
 
 interface BulkDataStudioProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -62,6 +65,27 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
       return;
     }
     vm.updateDialogOpen = true;
+  }
+
+  async function refreshData(): Promise<void> {
+    if (!vm.selectedView && !vm.fetchXml) {
+      return;
+    }
+
+    vm.isDataLoading = true;
+    try {
+      await utils.loadData();
+    } catch (error: any) {
+      const message = error && typeof error.message === "string" ? error.message : String(error);
+      onLog(`Error refreshing data: ${message}`, "error");
+      await window.toolboxAPI.utils.showNotification({
+        title: "Error Refreshing Data",
+        body: `Error refreshing data: ${message}`,
+        type: "error",
+      });
+    } finally {
+      vm.isDataLoading = false;
+    }
   }
 
   async function saveConfiguration(): Promise<void> {
@@ -277,6 +301,13 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
               </MenuList>
             </MenuPopover>
           </Menu>
+          <Tooltip content="Refresh Data" relationship="label">
+            <Button
+              icon={<ArrowClockwiseFilled />}
+              onClick={refreshData}
+              disabled={vm.isDataLoading || (!vm.selectedView && !vm.fetchXml)}
+            />
+          </Tooltip>
           <Tooltip content="Open Configuration" relationship="label">
             <Button icon={<FolderOpenFilled />} onClick={loadConfiguration} disabled={!vm.selectedView}>
               Open Job
@@ -302,6 +333,17 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
               disabled={!vm.selectedTable}
             >
               Add Config
+            </Button>
+          </Tooltip>
+          <Tooltip content="Clone selected rows" relationship="label">
+            <Button
+              icon={<CopyFilled />}
+              onClick={() => {
+                vm.clonePanelOpen = true;
+              }}
+              disabled={!vm.selectedTable || vm.selectedRows.length === 0 || vm.isDataLoading}
+            >
+              Clone
             </Button>
           </Tooltip>
           <Tooltip content="Update Selected rows with configured values" relationship="label">
@@ -341,12 +383,32 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
     <div>
       {toolbar}
       {vm.viewSelectorOpen && <ViewSelector dvSvc={dvSvc} vm={vm} onLog={onLog} />}
-      {vm.fetchXmlEditorOpen && <FetchXmlEditorDialog vm={vm} onLog={onLog} />}
+      {vm.fetchXmlEditorOpen && <FetchXmlEditorDialog vm={vm} onLog={onLog} onLoad={refreshData} />}
+      {vm.clonePanelOpen && <ClonePanel vm={vm} dvSvc={dvSvc} utils={utils} onLog={onLog} />}
       <div style={{ height: "94vh" }}>
         <Allotment defaultSizes={[100, 200]}>
           <Allotment.Pane minSize={200}>
-            <div>
+            <div style={{ position: "relative", height: "100%", width: "100%" }}>
               <DataGrid connection={connection} vm={vm} utils={utils} onLog={onLog} />
+              {vm.isDataLoading && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "var(--colorNeutralBackground)",
+                    backdropFilter: "blur(1px)",
+                    zIndex: 10,
+                  }}
+                >
+                  <Spinner size="large" label="Loading data..." labelPosition="below" />
+                </div>
+              )}
             </div>
           </Allotment.Pane>
           <Allotment.Pane minSize={300}>
