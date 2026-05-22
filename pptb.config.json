@@ -1,0 +1,32 @@
+{
+  "invocation": {
+    "version": "1.0.0",
+    "prefill": {
+      "properties": {
+        "fetchXml": {
+          "type": "string"
+        },
+        "fetchxml": {
+          "type": "string"
+        },
+        "xml": {
+          "type": "string"
+        }
+      }
+    },
+    "returnTopic": {
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["success", "error", "cancelled"]
+        },
+        "recordCount": {
+          "type": "number"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

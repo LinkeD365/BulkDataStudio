@@ -22,7 +22,7 @@
         "react-simple-code-editor": "^0.14.1"
       },
       "devDependencies": {
-        "@pptb/types": "^1.2.1",
+        "@pptb/types": "^1.2.2-beta.1",
         "@types/prismjs": "^1.26.5",
         "@types/react": "^18.3.12",
         "@types/react-dom": "^18.3.1",
@@ -2447,9 +2447,9 @@
       }
     },
     "node_modules/@pptb/types": {
-      "version": "1.2.1",
-      "resolved": "https://registry.npmjs.org/@pptb/types/-/types-1.2.1.tgz",
-      "integrity": "sha512-U8/Tij6CB09T+g/lE3gubdNnw7wmHz4LKoaWCMiXsv6BTNliXD99Wt6XW1K7WWdUwhIknKK9Jor3YhzoboVhHA==",
+      "version": "1.2.2-beta.1",
+      "resolved": "https://registry.npmjs.org/@pptb/types/-/types-1.2.2-beta.1.tgz",
+      "integrity": "sha512-SbuKNDsUFGcUOzEetkmpk5SZc0eXmPyz4jqrFcVBvI5H38Mmf7xzdCvhTXCs3QqOkrRX5f6zn2I4chpk3OWNCw==",
       "dev": true,
       "license": "GPL-3.0",
       "bin": {
