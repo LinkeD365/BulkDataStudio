@@ -33,6 +33,7 @@ export class CloneChildConfig {
   parentLookupFieldLogicalName: string = "";
   parentLookupFieldSchemaName: string = "";
   excludedFields: string[] = [];
+  childConfigs: CloneChildConfig[] = [];
 
   constructor(init?: Partial<CloneChildConfig>) {
     makeObservable(this, {
@@ -40,9 +41,13 @@ export class CloneChildConfig {
       parentLookupFieldLogicalName: observable,
       parentLookupFieldSchemaName: observable,
       excludedFields: observable,
+      childConfigs: observable,
       setChildTable: action,
       setLookupField: action,
       setExcludedFields: action,
+      setChildConfigs: action,
+      addChildConfig: action,
+      removeChildConfig: action,
     });
     Object.assign(this, init);
   }
@@ -56,6 +61,18 @@ export class CloneChildConfig {
   }
   setExcludedFields(value: string[]) {
     this.excludedFields = value;
+  }
+
+  setChildConfigs(value: CloneChildConfig[]) {
+    this.childConfigs = value;
+  }
+
+  addChildConfig(config?: CloneChildConfig) {
+    this.childConfigs.push(config || new CloneChildConfig());
+  }
+
+  removeChildConfig(config: CloneChildConfig) {
+    this.childConfigs = this.childConfigs.filter((item) => item !== config);
   }
 }
 

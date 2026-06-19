@@ -14,7 +14,7 @@ import {
   RowSelectionModule,
   SelectionChangedEvent,
 } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
 
 ModuleRegistry.registerModules([
   TextFilterModule,
@@ -179,6 +179,9 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     wrapText: true,
     autoHeight: true,
     width: 100,
+    cellRenderer: (params: CustomCellRendererProps<any>) => (
+      <div className="bds-grid-line-clamp">{params.valueFormatted ?? String(params.value ?? "")}</div>
+    ),
   };
 
   const rowSelection = React.useMemo<RowSelectionOptions | "single" | "multiple">(() => {

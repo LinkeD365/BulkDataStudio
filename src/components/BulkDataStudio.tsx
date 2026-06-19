@@ -254,6 +254,7 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
         }
 
         vm.updateCols = updateCols;
+
         onLog(`Configuration loaded successfully with ${updateCols.length} fields`, "success");
         window.toolboxAPI.utils.showNotification({
           title: "Configuration Loaded",
