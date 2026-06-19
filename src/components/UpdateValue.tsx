@@ -19,6 +19,8 @@ interface UpdateValueProps {
 export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element => {
   const { updateColumn, dvSvc, vm, onLog } = props;
   const [selectValues, setPicklistValues] = React.useState<SelectionValue[]>([]);
+  const selectedStateValue = vm.updateCols.find((col) => col.column.logicalName === "statecode")
+    ?.selectedSelections?.[0]?.value;
 
   const [lookupPopupOpen, setLookupPopupOpen] = React.useState<boolean>(false);
 
@@ -86,6 +88,23 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
     };
     getFieldParameters();
   }, [updateColumn.column, dvSvc, vm.selectedTable?.logicalName]);
+
+  React.useEffect(() => {
+    if (updateColumn.column.type !== "Status") {
+      return;
+    }
+
+    setChoiceValues();
+
+    const selectedStatus = updateColumn.selectedSelections?.[0];
+    if (
+      selectedStatus &&
+      selectedStateValue &&
+      selectedStatus.parentState?.toString() !== selectedStateValue
+    ) {
+      updateColumn.selectedSelections = [];
+    }
+  }, [updateColumn.column.type, updateColumn.column.choiceValues, selectedStateValue]);
 
   const pickList = (
     <Combobox
