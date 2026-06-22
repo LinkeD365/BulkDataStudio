@@ -20,7 +20,15 @@ export class UpdateColumn {
   }
 
   get formattedNewValue(): string {
-    if (this.column.type === "Picklist" || this.column.type === "State" || this.column.type === "Status") {
+    if (
+      this.column.type === "Picklist" ||
+      this.column.type === "MultiSelectPicklist" ||
+      this.column.type === "State" ||
+      this.column.type === "Status"
+    ) {
+      if (this.selectedSelections && this.selectedSelections.length > 0) {
+        return this.selectedSelections.map((selection) => selection.label).join(", ");
+      }
       return this.oldSelValues ? this.oldSelValues.join(", ") : "";
     }
     return this.newValue !== undefined && this.newValue !== null ? String(this.newValue) : "";
@@ -30,6 +38,7 @@ export class UpdateColumn {
     if (this.setStatus === "Fixed") {
       if (
         this.column.type === "Picklist" ||
+        this.column.type === "MultiSelectPicklist" ||
         this.column.type === "State" ||
         this.column.type === "Status" ||
         this.column.type === "Lookup" ||
@@ -55,6 +64,9 @@ export class UpdateColumn {
         case "Owner":
           return `/${this.selectedSelections?.[0].ownerTable}(${this.selectedSelections?.[0].value})`;
         case "Picklist":
+          return this.selectedSelections?.[0].value;
+        case "MultiSelectPicklist":
+          return this.selectedSelections?.map((selection) => selection.value).join(",");
         case "State":
         case "Status":
           return this.selectedSelections?.[0].value;

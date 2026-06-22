@@ -46,6 +46,7 @@ export class utilService {
     return new Promise<void>(async (resolve, reject) => {
       switch (column.type) {
         case "Picklist":
+        case "MultiSelectPicklist":
         case "State":
         case "Status":
           if (!column.choiceValues || column.choiceValues.length === 0) {

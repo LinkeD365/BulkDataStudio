@@ -100,7 +100,29 @@ export const UpdateList = observer((props: UpdateListProps): React.JSX.Element =
   const { dvSvc, vm, onLog } = props;
 
   const cols: ColDef<UpdateColumn>[] = [
-    { field: "column.displayName", headerName: "Field Name", flex: 2 },
+    {
+      field: "column.displayName",
+      headerName: "Field Name",
+      flex: 2,
+      cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) => {
+        const fieldName = params.data?.column.displayName || "";
+        return (
+          <div
+            title={fieldName}
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              lineHeight: "1.2",
+              maxHeight: "2.4em",
+            }}
+          >
+            {fieldName}
+          </div>
+        );
+      },
+    },
     {
       field: "newValue",
       headerName: "New Value",

@@ -159,6 +159,7 @@ export class Column {
       case "Owner":
         return `_${this.logicalName}_value@OData.Community.Display.V1.FormattedValue`;
       case "Picklist":
+      case "MultiSelectPicklist":
       case "State":
       case "Status":
         return `${this.logicalName}@OData.Community.Display.V1.FormattedValue`;

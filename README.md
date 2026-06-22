@@ -13,6 +13,13 @@ Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https:/
 - ✅ Allow Edit of FetchXml
 - ✅ Touch per field
 - ✅ Some XrmTokens for calculated fields
+- 📘 Calculated fields reference: [All calculated field options](CALCULATED_COLUMNS.md)
+- ✅ Clone record with child tables
+
+22/06/26
+- Added clone record with child tables functionality
+- Added option to be called from other tools that provide fetchxml
+- Added support for multi choice lists.
 
 30/03/26
 - Fixed [#33 Does not load active stage](https://github.com/LinkeD365/BulkDataStudio/issues/33)
