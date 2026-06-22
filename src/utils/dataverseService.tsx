@@ -546,7 +546,7 @@ export class dvService {
       const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${column.logicalName}')/Microsoft.Dynamics.CRM.${attributeMeta}?$select=LogicalName&$expand=OptionSet`;
       
       const picklistMeta: any = await this.dvApi.queryData(url);
-      console.log(`Picklist metadata for ${tableLogicalName}.${column.logicalName}:`, picklistMeta);  
+      this.onLog(`Picklist metadata loaded for ${tableLogicalName}.${column.logicalName}`, "info");
       const options = picklistMeta.OptionSet?.Options || [];
       const values: SelectionValue[] = options.map((opt: any) => ({
         label: opt.Label?.UserLocalizedLabel?.Label || "",
