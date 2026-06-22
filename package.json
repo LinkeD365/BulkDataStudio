@@ -1,6 +1,6 @@
 {
   "name": "@linked365/pptb-bulk-data-studio",
-  "version": "0.5.3",
+  "version": "0.5.4-beta.2",
   "displayName": "Bulk Data Studio",
   "description": "Bulk Data Studio is a Power Platform ToolBox tool that allows users to perform bulk data operations in Microsoft Dataverse environments.",
   "icon": "Linked365Logo.svg",
@@ -37,7 +37,8 @@
     "dev": "vite",
     "preview": "vite preview",
     "watch": "vite build --watch",
-    "finalize-package": "npm shrinkwrap"
+    "finalize-package": "npm shrinkwrap",
+    "validate": "npx pptb-validate"
   },
   "dependencies": {
     "@fluentui/react-components": "^9.72.9",
@@ -53,7 +54,7 @@
     "react-simple-code-editor": "^0.14.1"
   },
   "devDependencies": {
-    "@pptb/types": "^1.2.1",
+    "@pptb/types": "^1.2.3-beta.0",
     "@types/prismjs": "^1.26.5",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
