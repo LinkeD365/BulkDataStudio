@@ -66,7 +66,7 @@ export class UpdateColumn {
         case "Picklist":
           return this.selectedSelections?.[0].value;
         case "MultiSelectPicklist":
-          return this.selectedSelections?.map((selection) => parseInt(selection.value, 10));
+          return this.selectedSelections?.map((selection) => selection.value).join(",");
         case "State":
         case "Status":
           return this.selectedSelections?.[0].value;
