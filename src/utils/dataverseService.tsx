@@ -210,47 +210,60 @@ export class dvService {
       }
     }
 
-    const effectiveChildConfigs = childConfigs.filter(
-      (cfg) => cfg.childTableLogicalName && cfg.parentLookupFieldLogicalName,
-    );
-
-    if (effectiveChildConfigs.length > 0 && !parentTable.setName) {
-      const msg = `Entity set name not found for parent table '${parentTable.logicalName}'. Child records cannot be cloned.`;
-      this.onLog(msg, "error");
-      throw new Error(msg);
-    }
-
-    for (const childConfig of effectiveChildConfigs) {
-      const childTable = allTables.find((t) => t.logicalName === childConfig.childTableLogicalName);
-      if (!childTable) {
-        this.onLog(`Child table not found: ${childConfig.childTableLogicalName}`, "warning");
-        continue;
+    const cloneChildHierarchy = async (
+      sourceParentTable: Table,
+      parentIdMappings: Map<string, string>,
+      configs: CloneChildConfig[],
+    ): Promise<void> => {
+      const effectiveConfigs = configs.filter((cfg) => cfg.childTableLogicalName && cfg.parentLookupFieldLogicalName);
+      if (effectiveConfigs.length === 0) {
+        return;
       }
 
-      if (!childTable.fields || childTable.fields.length === 0) {
-        childTable.fields = await this.getFields(childTable.logicalName);
+      if (!sourceParentTable.setName) {
+        const msg = `Entity set name not found for parent table '${sourceParentTable.logicalName}'. Child records cannot be cloned.`;
+        this.onLog(msg, "error");
+        throw new Error(msg);
       }
 
-      const childAlternateKeyFields = await getCachedAlternateKeyFields(childTable.logicalName);
+      for (const childConfig of effectiveConfigs) {
+        const childTable = allTables.find((t) => t.logicalName === childConfig.childTableLogicalName);
+        if (!childTable) {
+          this.onLog(`Child table not found: ${childConfig.childTableLogicalName}`, "warning");
+          continue;
+        }
 
-      const childSkippedSet = new Set<string>([
-        ...childConfig.excludedFields,
-        childTable.primaryIdAttribute,
-        childConfig.parentLookupFieldLogicalName,
-        ...childAlternateKeyFields,
-      ]);
+        if (!childTable.fields || childTable.fields.length === 0) {
+          childTable.fields = await this.getFields(childTable.logicalName);
+        }
 
-      const childCloneFields = childTable.fields
-        .filter((field) => !childSkippedSet.has(field.logicalName))
-        .filter((field) => this.isCloneSupportedFieldType(field))
-        .filter((field) => field.logicalName !== childTable.primaryIdAttribute)
-        .filter((field) => field.isValidForCreate);
+        const childAlternateKeyFields = await getCachedAlternateKeyFields(childTable.logicalName);
+        const childSkippedSet = new Set<string>([
+          ...childConfig.excludedFields,
+          childTable.primaryIdAttribute,
+          childConfig.parentLookupFieldLogicalName,
+          ...childAlternateKeyFields,
+        ]);
 
-      const childFieldNames = childCloneFields.map((field) => field.logicalName);
+        const childCloneFields = childTable.fields
+          .filter((field) => !childSkippedSet.has(field.logicalName))
+          .filter((field) => this.isCloneSupportedFieldType(field))
+          .filter((field) => field.logicalName !== childTable.primaryIdAttribute)
+          .filter((field) => field.isValidForCreate);
 
-      for (const [oldParentId, newParentId] of parentIdMap.entries()) {
-        const childAttrsXml = childFieldNames.map((f) => `<attribute name='${f}'/>`).join("");
-        const childFetchXml = `<fetch>
+        const childFieldNames = childCloneFields.map((field) => field.logicalName);
+        const parentLookupField = childTable.fields.find(
+          (field) => field.logicalName === childConfig.parentLookupFieldLogicalName,
+        );
+        const lookupBindName = parentLookupField?.isCustom
+          ? childConfig.parentLookupFieldSchemaName || childConfig.parentLookupFieldLogicalName
+          : childConfig.parentLookupFieldLogicalName;
+
+        const childIdMappings = new Map<string, string>();
+
+        for (const [oldParentId, newParentId] of parentIdMappings.entries()) {
+          const childAttrsXml = childFieldNames.map((f) => `<attribute name='${f}'/>`).join("");
+          const childFetchXml = `<fetch>
   <entity name="${childTable.logicalName}">
     ${childAttrsXml}
     <attribute name="${childTable.primaryIdAttribute}"/>
@@ -260,27 +273,34 @@ export class dvService {
   </entity>
 </fetch>`;
 
-        const childData = await this.dvApi.fetchXmlQuery(childFetchXml);
-        const childRecords = Array.isArray(childData?.value) ? childData.value : [];
-        for (const childRecord of childRecords) {
-          const childPayload = await this.createClonePayloadFromRecord(
-            childTable.logicalName,
-            childRecord,
-            childCloneFields,
-            allTables,
-          );
-          const parentLookupField = childTable.fields.find(
-            (field) => field.logicalName === childConfig.parentLookupFieldLogicalName,
-          );
-          const lookupBindName = parentLookupField?.isCustom
-            ? childConfig.parentLookupFieldSchemaName || childConfig.parentLookupFieldLogicalName
-            : childConfig.parentLookupFieldLogicalName;
-          childPayload[`${lookupBindName}@odata.bind`] = `/${parentTable.setName}(${newParentId})`;
-          await this.dvApi.create(childTable.logicalName, childPayload);
-          childCloned += 1;
+          const childData = await this.dvApi.fetchXmlQuery(childFetchXml);
+          const childRecords = Array.isArray(childData?.value) ? childData.value : [];
+          for (const childRecord of childRecords) {
+            const oldChildId = childRecord[childTable.primaryIdAttribute];
+            if (!oldChildId) {
+              continue;
+            }
+
+            const childPayload = await this.createClonePayloadFromRecord(
+              childTable.logicalName,
+              childRecord,
+              childCloneFields,
+              allTables,
+            );
+            childPayload[`${lookupBindName}@odata.bind`] = `/${sourceParentTable.setName}(${newParentId})`;
+            const createdChild = await this.dvApi.create(childTable.logicalName, childPayload);
+            childIdMappings.set(String(oldChildId), createdChild.id);
+            childCloned += 1;
+          }
+        }
+
+        if (childConfig.childConfigs.length > 0 && childIdMappings.size > 0) {
+          await cloneChildHierarchy(childTable, childIdMappings, childConfig.childConfigs);
         }
       }
-    }
+    };
+
+    await cloneChildHierarchy(parentTable, parentIdMap, childConfigs);
 
     this.onLog(`Clone completed. Parent records: ${parentCloned}, child records: ${childCloned}`, "success");
     return { parentCloned, childCloned };
@@ -464,20 +484,27 @@ export class dvService {
     }
 
     try {
-      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes?$select=LogicalName,SchemaName,DisplayName,AttributeType,IsPrimaryId,IsCustomAttribute,IsValidForCreate&$filter=IsValidForUpdate eq true`;
+      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes?$select=LogicalName,SchemaName,DisplayName,AttributeType,AttributeTypeName,IsPrimaryId,IsCustomAttribute,IsValidForCreate&$filter=IsValidForUpdate eq true`;
       const metadataAlt: any = await this.dvApi.queryData(url);
       const fields = (Array.isArray(metadataAlt?.value) ? metadataAlt.value : [])
         .map(
-          (attr: any) =>
-            new Column(
+          (attr: any) => {
+            const attributeTypeName = attr.AttributeTypeName?.Value;
+            const resolvedType =
+              attr.AttributeType === "Virtual" && attributeTypeName === "MultiSelectPicklistType"
+                ? "MultiSelectPicklist"
+                : attr.AttributeType;
+
+            return new Column(
               attr.LogicalName,
               attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName,
-              attr.AttributeType,
+              resolvedType,
               attr.IsPrimaryId,
               attr.SchemaName,
               !!attr.IsCustomAttribute,
               attr.IsValidForCreate !== false,
-            ),
+            );
+          },
         )
         .sort((a: any, b: any) => a.displayName.localeCompare(b.displayName));
 
@@ -503,6 +530,9 @@ export class dvService {
         case "Picklist":
           attributeMeta = "PicklistAttributeMetadata";
           break;
+        case "MultiSelectPicklist":
+          attributeMeta = "MultiSelectPicklistAttributeMetadata";
+          break;
         case "State":
           attributeMeta = "StateAttributeMetadata";
           break;
@@ -516,7 +546,7 @@ export class dvService {
       const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${column.logicalName}')/Microsoft.Dynamics.CRM.${attributeMeta}?$select=LogicalName&$expand=OptionSet`;
 
       const picklistMeta: any = await this.dvApi.queryData(url);
-
+      this.onLog(`Picklist metadata loaded for ${tableLogicalName}.${column.logicalName}`, "info");
       const options = picklistMeta.OptionSet?.Options || [];
       const values: SelectionValue[] = options.map((opt: any) => ({
         label: opt.Label?.UserLocalizedLabel?.Label || "",

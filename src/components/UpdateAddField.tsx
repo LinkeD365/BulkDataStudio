@@ -59,6 +59,7 @@ function renderIcon(type: string = ""): React.JSX.Element {
       icon = <SlideSearchRegular style={{ fontSize: "24px", verticalAlign: "Center" }} />;
       break;
     case "Picklist":
+    case "MultiSelectPicklist":
     case "State":
     case "Status":
       icon = <TextBulletListSquareSearchRegular style={{ fontSize: "24px", verticalAlign: "Center" }} />;
