@@ -236,7 +236,12 @@ export const BulkDataStudio = observer((props: BulkDataStudioProps): React.JSX.E
                 onLog(`Error loading lookup metadata for field ${column.logicalName}: ${error}`, "warning");
               }
             } else if (
-              (column.type === "Picklist" || column.type === "State" || column.type === "Status") &&
+              (
+                column.type === "Picklist" ||
+                column.type === "MultiSelectPicklist" ||
+                column.type === "State" ||
+                column.type === "Status"
+              ) &&
               (!column.choiceValues || column.choiceValues.length === 0)
             ) {
               try {

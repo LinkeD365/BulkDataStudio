@@ -484,20 +484,27 @@ export class dvService {
     }
 
     try {
-      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes?$select=LogicalName,SchemaName,DisplayName,AttributeType,IsPrimaryId,IsCustomAttribute,IsValidForCreate&$filter=IsValidForUpdate eq true`;
+      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes?$select=LogicalName,SchemaName,DisplayName,AttributeType,AttributeTypeName,IsPrimaryId,IsCustomAttribute,IsValidForCreate&$filter=IsValidForUpdate eq true`;
       const metadataAlt: any = await this.dvApi.queryData(url);
       const fields = (Array.isArray(metadataAlt?.value) ? metadataAlt.value : [])
         .map(
-          (attr: any) =>
-            new Column(
+          (attr: any) => {
+            const attributeTypeName = attr.AttributeTypeName?.Value;
+            const resolvedType =
+              attr.AttributeType === "Virtual" && attributeTypeName === "MultiSelectPicklistType"
+                ? "MultiSelectPicklist"
+                : attr.AttributeType;
+
+            return new Column(
               attr.LogicalName,
               attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName,
-              attr.AttributeType,
+              resolvedType,
               attr.IsPrimaryId,
               attr.SchemaName,
               !!attr.IsCustomAttribute,
               attr.IsValidForCreate !== false,
-            ),
+            );
+          },
         )
         .sort((a: any, b: any) => a.displayName.localeCompare(b.displayName));
 
@@ -522,6 +529,9 @@ export class dvService {
       switch (column.type) {
         case "Picklist":
           attributeMeta = "PicklistAttributeMetadata";
+          break;
+        case "MultiSelectPicklist":
+          attributeMeta = "MultiSelectPicklistAttributeMetadata";
           break;
         case "State":
           attributeMeta = "StateAttributeMetadata";

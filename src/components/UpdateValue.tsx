@@ -41,6 +41,10 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
     }
   };
 
+  const onMultiOptionSelected = (selectedOptions: string[]) => {
+    updateColumn.selectedSelections = selectValues.filter((value) => selectedOptions.includes(value.value));
+  };
+
   const setChoiceValues = () => {
     const choices = updateColumn.column.choiceValues || [];
     if (updateColumn.column.type === "Status") {
@@ -62,6 +66,7 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
     const getFieldParameters = async () => {
       switch (updateColumn.column?.type) {
         case "Picklist":
+        case "MultiSelectPicklist":
         case "State":
         case "Status":
           if (updateColumn.column.choiceValues && updateColumn.column.choiceValues.length > 0) {
@@ -106,6 +111,8 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
     }
   }, [updateColumn.column.type, updateColumn.column.choiceValues, selectedStateValue]);
 
+  const selectedMultiLabels = (updateColumn.selectedSelections || []).map((selection) => selection.label).join(", ");
+
   const pickList = (
     <Combobox
       style={{ width: "100%" }}
@@ -118,6 +125,26 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
     >
       {selectValues.map((value, index) => (
         <Option key={index} value={value.value}>
+          {value.label}
+        </Option>
+      ))}
+    </Combobox>
+  );
+
+  const multiPickList = (
+    <Combobox
+      style={{ width: "100%" }}
+      multiselect
+      placeholder="Select Options"
+      selectedOptions={(updateColumn.selectedSelections || []).map((selection) => selection.value)}
+      value={selectedMultiLabels}
+      onOptionSelect={(_, data) => {
+        onMultiOptionSelected(data.selectedOptions || []);
+      }}
+      disabled={selectValues.length === 0}
+    >
+      {selectValues.map((value, index) => (
+        <Option key={index} value={value.value} text={value.label}>
           {value.label}
         </Option>
       ))}
@@ -192,9 +219,10 @@ export const UpdateValue = observer((props: UpdateValueProps): React.JSX.Element
       {updateColumn.setStatus === "Fixed" && (
         <>
           {(updateColumn.column.type === "Picklist" ||
+            updateColumn.column.type === "MultiSelectPicklist" ||
             updateColumn.column.type === "State" ||
             updateColumn.column.type === "Status") &&
-            pickList}
+            (updateColumn.column.type === "MultiSelectPicklist" ? multiPickList : pickList)}
           {(updateColumn.column.type === "String" || updateColumn.column.type === "Memo") && stringEditor}
           {updateColumn.column.type === "Boolean" && booleanEditor}
           {(updateColumn.column.type === "Money" ||
