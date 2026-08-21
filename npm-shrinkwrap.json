@@ -1,12 +1,12 @@
 {
   "name": "@linked365/pptb-bulk-data-studio",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@linked365/pptb-bulk-data-studio",
-      "version": "0.7.2",
+      "version": "0.7.3",
       "license": "MIT",
       "dependencies": {
         "@fluentui/react-components": "^9.72.9",
