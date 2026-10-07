@@ -273,13 +273,9 @@ body {
 }
 
 .bds-grid-line-clamp {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
   overflow: hidden;
-  white-space: normal;
-  line-height: 1.2rem;
-  max-height: 4.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .output:empty::before {

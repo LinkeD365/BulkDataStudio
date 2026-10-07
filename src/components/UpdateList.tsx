@@ -35,36 +35,43 @@ const statusIcons: Record<string, React.JSX.Element> = {
   "Set Null": <DismissCircle20Regular />,
 };
 
-const ActionDropdown = observer(({ updateCol }: { updateCol: UpdateColumn }): React.JSX.Element => {
-  return (
-    <div style={{ width: "100%" }}>
-      <Dropdown
-        style={{ width: "100%" }}
-        value={updateCol.setStatus}
-        selectedOptions={[updateCol.setStatus]}
-        button={
-          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            {statusIcons[updateCol.setStatus]}
-            {updateCol.setStatus}
-          </span>
-        }
-        onOptionSelect={(_, data) => {
-          updateCol.setStatus = data.optionValue as string;
-        }}
-        disabled={updateCol.column.type === "Status" || updateCol.column.type === "State"}
-      >
-        {SetStatus.map((option, index) => (
-          <Option key={index} value={option} text={option}>
+const ActionDropdown = observer(
+  ({ updateCol }: { updateCol: UpdateColumn }): React.JSX.Element => {
+    return (
+      <div style={{ width: "100%" }}>
+        <Dropdown
+          style={{ width: "100%" }}
+          value={updateCol.setStatus}
+          selectedOptions={[updateCol.setStatus]}
+          button={
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              {statusIcons[option]}
-              {option}
+              {statusIcons[updateCol.setStatus]}
+              {updateCol.setStatus}
             </span>
-          </Option>
-        ))}
-      </Dropdown>
-    </div>
-  );
-});
+          }
+          onOptionSelect={(_, data) => {
+            updateCol.setStatus = data.optionValue as string;
+          }}
+          disabled={
+            updateCol.column.type === "Status" ||
+            updateCol.column.type === "State"
+          }
+        >
+          {SetStatus.map((option, index) => (
+            <Option key={index} value={option} text={option}>
+              <span
+                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                {statusIcons[option]}
+                {option}
+              </span>
+            </Option>
+          ))}
+        </Dropdown>
+      </div>
+    );
+  },
+);
 
 ModuleRegistry.registerModules([
   TextFilterModule,
@@ -83,7 +90,10 @@ const agTheme = themeQuartz.withParams({
 interface UpdateListProps {
   dvSvc: dvService;
   vm: ViewModel;
-  onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
+  onLog: (
+    message: string,
+    type?: "info" | "success" | "warning" | "error",
+  ) => void;
 }
 
 const defaultColDef: ColDef = {
@@ -91,104 +101,132 @@ const defaultColDef: ColDef = {
   filter: true,
   resizable: true,
   flex: 1,
-  wrapText: true,
-  autoHeight: true,
+  wrapText: false,
+  autoHeight: false,
+  cellStyle: { alignItems: "center" },
   width: 100,
 };
 
-export const UpdateList = observer((props: UpdateListProps): React.JSX.Element => {
-  const { dvSvc, vm, onLog } = props;
+export const UpdateList = observer(
+  (props: UpdateListProps): React.JSX.Element => {
+    const { dvSvc, vm, onLog } = props;
 
-  const cols: ColDef<UpdateColumn>[] = [
-    {
-      field: "column.displayName",
-      headerName: "Field Name",
-      flex: 2,
-      cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) => {
-        const fieldName = params.data?.column.displayName || "";
-        return (
-          <div
-            title={fieldName}
-            style={{
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              lineHeight: "1.2",
-              maxHeight: "2.4em",
-            }}
-          >
-            {fieldName}
+    const cols: ColDef<UpdateColumn>[] = [
+      {
+        field: "column.displayName",
+        headerName: "Field Name",
+        flex: 2,
+        cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) => {
+          const fieldName = params.data?.column.displayName || "";
+          return (
+            <div
+              title={fieldName}
+              style={{
+                alignItems: "center",
+                display: "flex",
+                height: "100%",
+              }}
+            >
+              <span
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  lineHeight: "1.2",
+                  maxHeight: "2.4em",
+                }}
+              >
+                {fieldName}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        field: "setStatus",
+        headerName: "Action",
+        flex: 1,
+        minWidth: 150,
+        cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) => {
+          const updateCol = params.data;
+          if (!updateCol) return null;
+          return <ActionDropdown updateCol={updateCol} />;
+        },
+
+        singleClickEdit: true,
+      },
+      {
+        field: "newValue",
+        headerName: "New Value",
+        flex: 2,
+        cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) =>
+          params.data ? (
+            <UpdateValue
+              updateColumn={params.data}
+              dvSvc={dvSvc}
+              vm={vm}
+              onLog={onLog}
+            />
+          ) : null,
+      },
+      {
+        field: "onlyDifferent",
+        headerName: "Only If Different",
+        editable: true,
+        cellEditor: "agCheckboxCellEditor",
+        flex: 1,
+      },
+      {
+        headerName: "",
+        width: 50,
+        minWidth: 50,
+        maxWidth: 50,
+        flex: 0,
+        pinned: "right",
+        lockPinned: true,
+        suppressSizeToFit: true,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellStyle: { padding: 0 },
+        cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) => {
+          if (!params.data) return null;
+          return (
+            <Button
+              appearance="subtle"
+              icon={<Delete20Regular />}
+              size="small"
+              aria-label="Remove field"
+              style={{ minWidth: 0, width: "100%", padding: 0 }}
+              onClick={() => {
+                vm.updateCols = vm.updateCols.filter((c) => c !== params.data);
+              }}
+            />
+          );
+        },
+      },
+    ];
+
+    return (
+      <>
+        {vm.updateCols.length > 0 ? (
+          <div style={{ width: "100%", height: "94vh", flexBasis: 0 }}>
+            <AgGridReact<UpdateColumn>
+              theme={agTheme}
+              rowData={vm.updateCols || []}
+              defaultColDef={defaultColDef}
+              columnDefs={cols}
+              rowHeight={48}
+              debug={true}
+            />
           </div>
-        );
-      },
-    },
-    {
-      field: "newValue",
-      headerName: "New Value",
-      flex: 2,
-      cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) =>
-        params.data ? <UpdateValue updateColumn={params.data} dvSvc={dvSvc} vm={vm} onLog={onLog} /> : null,
-    },
-    {
-      field: "setStatus",
-      headerName: "Action",
-      flex: 1,
-      minWidth: 150,
-      cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) => {
-        const updateCol = params.data;
-        if (!updateCol) return null;
-        return <ActionDropdown updateCol={updateCol} />;
-      },
-
-      singleClickEdit: true,
-    },
-    {
-      field: "onlyDifferent",
-      headerName: "Only If Different",
-      editable: true,
-      cellEditor: "agCheckboxCellEditor",
-      flex: 1,
-    },
-    {
-      headerName: "",
-      width: 50,
-      maxWidth: 50,
-      flex: 0,
-      sortable: false,
-      filter: false,
-      resizable: false,
-      cellRenderer: (params: CustomCellRendererProps<UpdateColumn>) => {
-        if (!params.data) return null;
-        return (
-          <Button
-            appearance="subtle"
-            icon={<Delete20Regular />}
-            size="small"
-            onClick={() => {
-              vm.updateCols = vm.updateCols.filter((c) => c !== params.data);
-            }}
-          />
-        );
-      },
-    },
-  ];
-
-  return (
-    <>
-      {vm.updateCols.length > 0 ? (
-        <div style={{ width: "100%", height: "94vh", flexBasis: 0 }}>
-          <AgGridReact<UpdateColumn>
-            theme={agTheme}
-            rowData={vm.updateCols || []}
-            defaultColDef={defaultColDef}
-            columnDefs={cols}
-            debug={true}
-          />
-        </div>
-      ) : (
-        <div style={{ padding: "20px" }}>No columns added for update. Please add columns to update.</div>
-      )}
-    </>
-  );
-});
+        ) : (
+          <div style={{ padding: "20px" }}>
+            No columns added for update. Please add columns to update.
+          </div>
+        )}
+      </>
+    );
+  },
+);
