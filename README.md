@@ -20,6 +20,30 @@ This tool allows users to perform bulk data operations efficiently within Micros
 - 📘 Calculated fields reference: [All calculated field options](CALCULATED_COLUMNS.md)
 - ✅ Clone record with child tables
 
+
+## Installation
+- Download and install from PPTB Marketplace
+- Select tool from installed tools and choose appropriate dataverse connection.
+
+## Useage
+- Select Fetch Data, this will display a list of tables in your environment.
+- Choose a view to use. You can also use any FetchXML to return data
+- Select Add Config to choose a column to update.
+- Actions to take on each column are defined by column type.
+- Select one or more rows in the datagrid and then select update rows. This will take the actions you suggested on all the rows.
+
+## Updates
+
+08/10/26
+- Reordered controls in the update rows (#51)
+- Data grid cell values no longer wrap (#50)
+- Added horizontal scrolling to data grids (#54)
+- Vertically aligned controls in the Fields to update list (#53)
+- Selected view and FetchXML are cleared when changing table (#55)
+- Field definitions are cleared when changing the data query (#52)
+- Table selection is kept when reopening the load view dialog (#49)
+- Refactored data grid, FetchXML editor, update list and view selector components
+
 22/06/26
 - Added clone record with child tables functionality
 - Added option to be called from other tools that provide fetchxml
