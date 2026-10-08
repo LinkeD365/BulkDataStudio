@@ -64,9 +64,10 @@ not enable branch protection.
 1. In GitHub **Settings → Actions → General**, enable **Allow GitHub Actions to
    create and approve pull requests**. The release workflow grants its release
    job the write permissions needed to create PRs and releases.
-2. In **Settings → Environments**, create the `npm` environment. Allow release
-   tags (for example, `*.*.*`) to deploy, since publishing checks out the release
-   tag. Optionally require an approval before publishing.
+2. In **Settings → Environments**, create the `npm` environment and allow the
+   `main` branch to deploy. Deployment rules use the workflow's branch (`main`),
+   not the release tag checked out by the publishing job. Optionally require an
+   approval before publishing.
 3. In the npm settings for `@linked365/pptb-bulk-data-studio`, configure a
    **GitHub Actions trusted publisher** with owner `LinkeD365`, repository
    `BulkDataStudio`, workflow filename `release.yml`, and environment `npm`.
