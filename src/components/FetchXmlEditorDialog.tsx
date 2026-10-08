@@ -49,10 +49,10 @@ export const FetchXmlEditorDialog = observer(
       }
       if (currentFetchXml !== localFetchXml) {
         vm.updateCols = [];
+        vm.fetchFields = [];
       }
       vm.selectedView = undefined;
       vm.fetchXml = localFetchXml;
-      vm.fetchFields = [];
       vm.fetchXmlEditorOpen = false;
       onLoad?.();
     };
