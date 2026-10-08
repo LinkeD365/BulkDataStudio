@@ -36,7 +36,10 @@ interface DataGridProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   vm: ViewModel;
   utils: utilService;
-  onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
+  onLog: (
+    message: string,
+    type?: "info" | "success" | "warning" | "error",
+  ) => void;
 }
 
 export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
@@ -61,7 +64,10 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
         try {
           await utils.loadData();
         } catch (error: any) {
-          const message = error && typeof error.message === "string" ? error.message : String(error);
+          const message =
+            error && typeof error.message === "string"
+              ? error.message
+              : String(error);
           onLog(`Error loading data: ${message}`, "error");
         } finally {
           vm.isDataLoading = false;
@@ -89,24 +95,37 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
         const tableMatch = vm.fetchXml.match(/<entity\s+name=['"]([^'"]+)['"]/);
         if (tableMatch && tableMatch[1]) {
           const tableName = tableMatch[1];
-          const selectedTable = vm.tables?.find((t) => t.logicalName === tableName);
+          const selectedTable = vm.tables?.find(
+            (t) => t.logicalName === tableName,
+          );
           if (selectedTable) {
             vm.selectedTable = selectedTable;
-            if (!vm.selectedTable.fields || vm.selectedTable.fields.length === 0) {
+            if (
+              !vm.selectedTable.fields ||
+              vm.selectedTable.fields.length === 0
+            ) {
               await utils.dvSvc
                 .getFields(vm.selectedTable.logicalName)
                 .then((fields) => {
                   vm.selectedTable!.fields = fields;
-                  onLog(`Loaded ${fields.length} fields for table: ${tableName}`, "success");
+                  onLog(
+                    `Loaded ${fields.length} fields for table: ${tableName}`,
+                    "success",
+                  );
                 })
                 .catch((error) => {
-                  onLog(`Error loading fields for table ${tableName}: ${error.message}`, "error");
+                  onLog(
+                    `Error loading fields for table ${tableName}: ${error.message}`,
+                    "error",
+                  );
                 });
             }
           }
         }
         // Extract attributes from fetchXml
-        const attributeMatches = vm.fetchXml.match(/<attribute\s+name=['"]([^'"]+)['"]/g);
+        const attributeMatches = vm.fetchXml.match(
+          /<attribute\s+name=['"]([^'"]+)['"]/g,
+        );
         if (attributeMatches) {
           vm.fetchFields = attributeMatches
             .map((attr) => {
@@ -132,7 +151,11 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
   }, [vm.fetchXml]);
 
   const cols = React.useMemo(() => {
-    if ((!vm.selectedView && !vm.fetchXml) || !vm.selectedTable || vm.selectedTable.fields === undefined) {
+    if (
+      (!vm.selectedView && !vm.fetchXml) ||
+      !vm.selectedTable ||
+      vm.selectedTable.fields === undefined
+    ) {
       return [];
     }
 
@@ -140,14 +163,21 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
       // If no fieldNames in the view, but we have FetchXML, extract fields from FetchXML
       return (
         vm.fetchFields
-          .filter((fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute)
+          .filter(
+            (fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute,
+          )
           .map((fieldName) => {
-            const field = vm.selectedTable?.fields.find((f) => f.logicalName === fieldName);
+            const field = vm.selectedTable?.fields.find(
+              (f) => f.logicalName === fieldName,
+            );
             if (field) {
               return {
                 headerName: field?.displayName || fieldName,
                 field: field?.dataName || fieldName,
-                flex: field?.logicalName === vm.selectedTable?.primaryNameAttribute ? 2 : 1,
+                flex:
+                  field?.logicalName === vm.selectedTable?.primaryNameAttribute
+                    ? 2
+                    : 1,
               };
             }
           })
@@ -156,14 +186,21 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     }
     return (
       vm.selectedView?.fieldNames
-        ?.filter((fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute)
+        ?.filter(
+          (fieldName) => fieldName !== vm.selectedTable?.primaryIdAttribute,
+        )
         .map((fieldName) => {
-          const field = vm.selectedTable?.fields.find((f) => f.logicalName === fieldName);
+          const field = vm.selectedTable?.fields.find(
+            (f) => f.logicalName === fieldName,
+          );
           if (field) {
             return {
               headerName: field?.displayName || fieldName,
               field: field?.dataName || fieldName,
-              flex: field?.logicalName === vm.selectedTable?.primaryNameAttribute ? 2 : 1,
+              flex:
+                field?.logicalName === vm.selectedTable?.primaryNameAttribute
+                  ? 2
+                  : 1,
             };
           }
         })
@@ -176,15 +213,23 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     filter: true,
     resizable: true,
     flex: 1,
-    wrapText: true,
-    autoHeight: true,
+    minWidth: 150,
+    wrapText: false,
+    autoHeight: false,
     width: 100,
-    cellRenderer: (params: CustomCellRendererProps<any>) => (
-      <div className="bds-grid-line-clamp">{params.valueFormatted ?? String(params.value ?? "")}</div>
-    ),
+    cellRenderer: (params: CustomCellRendererProps<any>) => {
+      const value = String(params.valueFormatted ?? params.value ?? "");
+      return (
+        <div className="bds-grid-line-clamp" title={value}>
+          {value}
+        </div>
+      );
+    },
   };
 
-  const rowSelection = React.useMemo<RowSelectionOptions | "single" | "multiple">(() => {
+  const rowSelection = React.useMemo<
+    RowSelectionOptions | "single" | "multiple"
+  >(() => {
     return {
       mode: "multiRow",
     };
@@ -192,7 +237,7 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
   return (
     <>
       {vm.data && vm.data.length > 0 ? (
-        <div style={{ width: "100%", height: "94vh" }}>
+        <div style={{ width: "100%", height: "94vh", minWidth: 0 }}>
           <AgGridReact
             suppressFieldDotNotation
             rowData={vm.data}
@@ -205,7 +250,9 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
           />
         </div>
       ) : (
-        <div style={{ padding: "20px" }}>No data to display. Please select "Fetch Data" to load data.</div>
+        <div style={{ padding: "20px" }}>
+          No data to display. Please select "Fetch Data" to load data.
+        </div>
       )}
     </>
   );

@@ -2,6 +2,10 @@
 
 Bulk Data Studio, a respectful clone of Jonas Rapp's [Bulk Data Updater](https://jonasr.app/bdu/) within XrmToolBox.
 
+![Main Screenshot](https://github.com/LinkeD365/BulkDataStudio/blob/main/public/mainscreenshot.png?raw=true)
+
+This tool allows users to perform bulk data operations efficiently within Microsoft Dataverse environments.
+
 ## Features
 
 - ✅ Find records to update via view
