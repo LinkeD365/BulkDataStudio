@@ -212,9 +212,12 @@ export const ViewSelector = observer(
 
     const openSelectedView = () => {
       if (localSelectedView) {
+        const currentViewFetchXml = vm.selectedView?.fetchXml || "";
+        const formattedCurrentViewFetchXml =
+          formatXml(currentViewFetchXml) || currentViewFetchXml;
         const queryChanged =
           vm.selectedView?.id !== localSelectedView.id ||
-          vm.selectedView.fetchXml !== localFetchXml ||
+          formattedCurrentViewFetchXml !== localFetchXml ||
           !!vm.fetchXml;
         if (
           queryChanged &&
