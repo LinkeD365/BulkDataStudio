@@ -25,7 +25,7 @@ This tool allows users to perform bulk data operations efficiently within Micros
 - Download and install from PPTB Marketplace
 - Select tool from installed tools and choose appropriate dataverse connection.
 
-## Useage
+## Usage
 - Select Fetch Data, this will display a list of tables in your environment.
 - Choose a view to use. You can also use any FetchXML to return data
 - Select Add Config to choose a column to update.
