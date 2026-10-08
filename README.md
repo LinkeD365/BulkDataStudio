@@ -62,8 +62,11 @@ These settings must be applied in GitHub and npm; committing the workflows does
 not enable branch protection.
 
 1. In GitHub **Settings → Actions → General**, enable **Allow GitHub Actions to
-   create and approve pull requests**. The release workflow grants its release
-   job the write permissions needed to create PRs and releases.
+   create and approve pull requests**. If this setting is unavailable or
+   disabled by organization policy, create a `RELEASE_PLEASE_TOKEN` Actions
+   secret containing a fine-grained token with write access to contents, issues,
+   and pull requests in this repository. The release workflow uses that token
+   when configured and otherwise uses `GITHUB_TOKEN`.
 2. In **Settings → Environments**, create the `npm` environment and allow the
    `main` branch to deploy. Deployment rules use the workflow's branch (`main`),
    not the release tag checked out by the publishing job. Optionally require an
