@@ -49,6 +49,61 @@ This tool allows users to perform bulk data operations efficiently within Micros
 
 - Added Status and Ownership updates and fixed bugs around view selection
 
+## Releases and branch protection
+
+Releases use the same release-please and npm trusted-publishing tooling as
+[PPTB-EnvManager](https://github.com/LinkeD365/PPTB-EnvManager). Version changes
+are reviewed in a pull request; automation no longer pushes version bumps
+directly to `main`.
+
+### One-time administrator setup
+
+These settings must be applied in GitHub and npm; committing the workflows does
+not enable branch protection.
+
+1. In GitHub **Settings → Actions → General**, enable **Allow GitHub Actions to
+   create and approve pull requests**. The release workflow grants its release
+   job the write permissions needed to create PRs and releases.
+2. In **Settings → Environments**, create the `npm` environment. Allow release
+   tags (for example, `*.*.*`) to deploy, since publishing checks out the release
+   tag. Optionally require an approval before publishing.
+3. In the npm settings for `@linked365/pptb-bulk-data-studio`, configure a
+   **GitHub Actions trusted publisher** with owner `LinkeD365`, repository
+   `BulkDataStudio`, workflow filename `release.yml`, and environment `npm`.
+   Publishing uses OIDC and provenance, not an npm token.
+4. After CI has run once, create an active branch ruleset in **Settings → Rules
+   → Rulesets** targeting `main`:
+   - Require a pull request before merging and at least one approving review.
+   - Dismiss stale approvals when new commits are pushed.
+   - Require the **Build** status check from GitHub Actions and require branches
+     to be up to date before merging.
+   - Require conversation resolution, block force pushes, and restrict deletions.
+   - Do not give the release bot a bypass: release PRs follow the same rules.
+   - For a solo-maintained repository, use zero required approvals if there is
+     no other reviewer; authors cannot approve their own PRs.
+
+CI runs for every PR to `main`, including documentation and release PRs, so the
+required check is never skipped by path filters. The publishing job builds the
+release tag again before publishing.
+
+### Release process
+
+- Use Conventional Commit titles when squash-merging PRs: `fix:` produces a
+  patch release, `feat:` a minor release, and `feat!:` or a `BREAKING CHANGE:`
+  footer a major release. Ensure the final squash commit retains that title.
+- After a qualifying commit reaches `main`, release-please opens or updates a
+  release PR containing `package.json`, `npm-shrinkwrap.json`, the release
+  manifest, and a generated `CHANGELOG.md`. The initial baseline is `1.0.1`.
+- PRs created or updated with `GITHUB_TOKEN` do not automatically trigger other
+  Actions workflows. Close and reopen the release PR as a maintainer to trigger
+  CI after each bot update, or manually run **CI** with the release PR's branch
+  selected. Do not merge until **Build** passes.
+- Review and merge the release PR. The subsequent `main` push creates the GitHub
+  release and version tag, then publishes that tagged build to npm.
+- The **Release** workflow can also be run manually on `main` to reconcile
+  release PRs. It publishes only when release-please reports a newly created
+  release; it does not republish an existing version.
+
 ## License
 
 MIT
