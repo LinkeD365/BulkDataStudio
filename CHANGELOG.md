@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1](https://github.com/LinkeD365/BulkDataStudio/compare/1.1.0...1.1.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* Merge pull request [#64](https://github.com/LinkeD365/BulkDataStudio/issues/64) from LinkeD365/dev ([1a23ac0](https://github.com/LinkeD365/BulkDataStudio/commit/1a23ac0989eb1dccf9dcaabdbd8d9ce67249191c))
+* update log message for lookup field resolution error ([1a23ac0](https://github.com/LinkeD365/BulkDataStudio/commit/1a23ac0989eb1dccf9dcaabdbd8d9ce67249191c))
+* update log message for lookup field resolution error ([23f64b2](https://github.com/LinkeD365/BulkDataStudio/commit/23f64b24a4817eb54e2b3177e295a1e6998722ac))
+
 ## [1.1.0](https://github.com/LinkeD365/BulkDataStudio/compare/1.0.1...1.1.0) (2026-10-08)
 
 
