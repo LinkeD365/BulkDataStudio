@@ -311,7 +311,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
           }
         } catch (error: any) {
           onLog(
-            `Unable to resolve lookup target for ${childTable.logicalName}.${field.logicalName}: ${error}`,
+            `Unable to resolve lookup field for ${childTable.logicalName}.${field.logicalName}: ${error}`,
             "warning",
           );
         }
