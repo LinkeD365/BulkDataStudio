@@ -58,97 +58,25 @@ export const DataGrid = observer((props: DataGridProps): React.JSX.Element => {
     } else vm.selectedRows = [];
   }
   React.useEffect(() => {
-    if (utils && vm.selectedView && connection) {
+    if (utils && (vm.selectedView || vm.fetchXml) && connection) {
       (async () => {
         vm.isDataLoading = true;
         try {
           await utils.loadData();
-        } catch (error: any) {
-          const message =
-            error && typeof error.message === "string"
-              ? error.message
-              : String(error);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
           onLog(`Error loading data: ${message}`, "error");
+          await window.toolboxAPI.utils.showNotification({
+            title: "Error Loading Data",
+            body: message,
+            type: "error",
+          });
         } finally {
           vm.isDataLoading = false;
         }
       })();
     }
-  }, [connection, utils, vm.selectedView]);
-
-  React.useEffect(() => {
-    (async () => {
-      vm.isDataLoading = true;
-      if (utils && vm.fetchXml) {
-        if (vm.tables.length === 0) {
-          await utils.dvSvc
-            .getTables()
-            .then((tables) => {
-              vm.tables = tables;
-              onLog(`Loaded ${tables.length} tables`, "success");
-            })
-            .catch((error) => {
-              onLog(`Error loading tables: ${error.message}`, "error");
-            });
-        }
-        // Extract table name from fetchXml
-        const tableMatch = vm.fetchXml.match(/<entity\s+name=['"]([^'"]+)['"]/);
-        if (tableMatch && tableMatch[1]) {
-          const tableName = tableMatch[1];
-          const selectedTable = vm.tables?.find(
-            (t) => t.logicalName === tableName,
-          );
-          if (selectedTable) {
-            vm.selectedTable = selectedTable;
-            if (
-              !vm.selectedTable.fields ||
-              vm.selectedTable.fields.length === 0
-            ) {
-              await utils.dvSvc
-                .getFields(vm.selectedTable.logicalName)
-                .then((fields) => {
-                  vm.selectedTable!.fields = fields;
-                  onLog(
-                    `Loaded ${fields.length} fields for table: ${tableName}`,
-                    "success",
-                  );
-                })
-                .catch((error) => {
-                  onLog(
-                    `Error loading fields for table ${tableName}: ${error.message}`,
-                    "error",
-                  );
-                });
-            }
-          }
-        }
-        // Extract attributes from fetchXml
-        const attributeMatches = vm.fetchXml.match(
-          /<attribute\s+name=['"]([^'"]+)['"]/g,
-        );
-        if (attributeMatches) {
-          vm.fetchFields = attributeMatches
-            .map((attr) => {
-              const nameMatch = attr.match(/name=['"]([^'"]+)['"]/);
-              return nameMatch ? nameMatch[1] : "";
-            })
-            .filter((name) => name !== "");
-        } else {
-          vm.fetchFields = [];
-        }
-
-        await utils.loadData().catch(async (error: any) => {
-          await window.toolboxAPI.utils.showNotification({
-            title: "Error loading data",
-            body: `Error loading data: ${error.message}`,
-            type: "error",
-          });
-          onLog(`Error loading data: ${error.message}`, "error");
-        });
-      }
-      vm.isDataLoading = false;
-    })();
-  }, [vm.fetchXml]);
+  }, [connection, utils, vm.selectedView, vm.fetchXml, onLog]);
 
   const cols = React.useMemo(() => {
     if (

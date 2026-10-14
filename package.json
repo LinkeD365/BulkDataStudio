@@ -64,6 +64,7 @@
   },
   "files": [
     "dist",
+    "pptb.config.json",
     "npm-shrinkwrap.json"
   ]
 }

@@ -109,80 +109,33 @@ function App() {
         }
 
         const fetchXmlCandidate =
-          (typeof launchContext.fetchXml === "string" &&
-            launchContext.fetchXml) ||
-          (typeof launchContext.fetchxml === "string" &&
-            launchContext.fetchxml) ||
-          (typeof launchContext.xml === "string" && launchContext.xml) ||
-          "";
-        const fetchXml = fetchXmlCandidate.trim();
-
-        if (!fetchXml) {
-          addLog(
-            "Invocation context was provided but no fetchXml payload was found",
-            "warning",
+          launchContext.fetchxml ?? launchContext.fetchXml ?? launchContext.xml;
+        if (
+          typeof fetchXmlCandidate !== "string" ||
+          !fetchXmlCandidate.trim()
+        ) {
+          throw new Error(
+            "The invocation payload must include a non-empty fetchxml string.",
           );
-          return;
         }
 
         addLog(
-          "Invocation payload received. Running FetchXML query...",
+          "Invocation payload received. Loading FetchXML records...",
           "info",
         );
         viewModel.selectedView = undefined;
-        viewModel.fetchXml = fetchXml;
-        //viewModel.fetchFields = [];
-
-        const tableMatch = fetchXml.match(
-          /<entity\s+name=['\"]([^'\"]+)['\"]/i,
-        );
-        const tableLogicalName = tableMatch?.[1];
-
-        if (tableLogicalName) {
-          if (!viewModel.tables || viewModel.tables.length === 0) {
-            viewModel.tables = await dvSvc.getTables();
-          }
-
-          const matchedTable = viewModel.tables.find(
-            (t) => t.logicalName === tableLogicalName,
-          );
-          if (matchedTable) {
-            viewModel.selectedTable = matchedTable;
-            if (!matchedTable.fields || matchedTable.fields.length === 0) {
-              matchedTable.fields = await dvSvc.getFields(
-                matchedTable.logicalName,
-              );
-            }
-          } else {
-            addLog(
-              `Table ${tableLogicalName} from FetchXML was not found in this environment`,
-              "warning",
-            );
-          }
-        }
-
-      //  viewModel.isDataLoading = true;
-        // try {
-        //   await utils.loadData();
-        //   await window.toolboxAPI.invocation.returnData({
-        //     status: "success",
-        //     recordCount: Array.isArray(viewModel.data)
-        //       ? viewModel.data.length
-        //       : 0,
-        //   });
-        //   addLog("FetchXML invocation query completed", "success");
-        // } finally {
-        //   viewModel.isDataLoading = false;
-        // }
-      } catch (error: any) {
-        const message =
-          error && typeof error.message === "string"
-            ? error.message
-            : String(error);
-        addLog(`Failed to run invocation FetchXML query: ${message}`, "error");
-        await window.toolboxAPI.invocation.returnData({
-          status: "error",
-          error: message,
+        viewModel.updateCols = [];
+        viewModel.fetchFields = [];
+        viewModel.selectedRows = [];
+        viewModel.data = [];
+        viewModel.fetchXml = fetchXmlCandidate.trim();
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        addLog(`Failed to accept invocation FetchXML: ${message}`, "error");
+        await window.toolboxAPI.utils.showNotification({
+          title: "Error Receiving FetchXML",
+          body: message,
+          type: "error",
         });
       }
     })();

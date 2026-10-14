@@ -25,8 +25,50 @@ export class utilService {
       this.vm.data = data;
       this.onLog(`Loaded ${data.length} records from view: ${this.vm.selectedView.label}`, "success");
     } else if (this.vm.fetchXml) {
+      const fetchXml = this.vm.fetchXml;
+      const document = new DOMParser().parseFromString(fetchXml, "application/xml");
+      const root = document.documentElement;
+      const entities = Array.from(root.children).filter(
+        (element) => element.tagName === "entity",
+      );
+      const entity = entities[0];
+      const tableName = entity?.getAttribute("name");
+      if (
+        document.getElementsByTagName("parsererror").length > 0 ||
+        root.tagName !== "fetch" ||
+        entities.length !== 1 ||
+        !tableName
+      ) {
+        throw new Error("Invalid FetchXML: expected a <fetch> root with one named <entity>.");
+      }
+
+      this.vm.selectedRows = [];
+      if (this.vm.tables.length === 0) {
+        this.vm.tables = await this.dvSvc.getTables();
+      }
+      const table = this.vm.tables.find((item) => item.logicalName === tableName);
+      if (!table) {
+        throw new Error(`Table "${tableName}" was not found in this environment.`);
+      }
+      if (this.vm.selectedTable?.logicalName !== tableName) {
+        this.vm.updateCols = [];
+        this.vm.data = [];
+      }
+      if (!table.fields || table.fields.length === 0) {
+        table.fields = await this.dvSvc.getFields(tableName);
+      }
+      this.vm.selectedTable = table;
+      this.vm.fetchFields = Array.from(entity.children).some(
+        (element) => element.tagName === "all-attributes",
+      )
+        ? table.fields.map((field) => field.logicalName)
+        : Array.from(entity.children)
+            .filter((element) => element.tagName === "attribute")
+            .map((element) => element.getAttribute("name"))
+            .filter((name): name is string => !!name);
+
       this.onLog(`Loading data for custom FetchXML`, "info");
-      const data = await this.dvSvc.loadData(this.vm.fetchXml);
+      const data = await this.dvSvc.loadData(fetchXml);
       this.vm.data = data;
       this.onLog(`Loaded ${data.length} records for custom FetchXML`, "success");
     }
