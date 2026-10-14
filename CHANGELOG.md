@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/LinkeD365/BulkDataStudio/compare/1.1.1...1.2.0) (2026-10-14)
+
+
+### Features
+
+* enhance FetchXML handling and support for external tool integra… ([6301c98](https://github.com/LinkeD365/BulkDataStudio/commit/6301c98da6a63029f08046a9be633ff49d2621a6))
+* enhance FetchXML handling and support for external tool integration ([3170f64](https://github.com/LinkeD365/BulkDataStudio/commit/3170f64e86dc4379bad735308af48b30cd2cf063))
+
 ## [1.1.1](https://github.com/LinkeD365/BulkDataStudio/compare/1.1.0...1.1.1) (2026-10-09)
 
 
