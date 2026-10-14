@@ -38,6 +38,7 @@ export const FetchXmlEditorDialog = observer(
 
     const handleSave = () => {
       const currentFetchXml = vm.selectedView?.fetchXml || vm.fetchXml || "";
+      const queryChanged = !!vm.selectedView || vm.fetchXml !== localFetchXml;
       if (
         currentFetchXml !== localFetchXml &&
         vm.updateCols.length > 0 &&
@@ -54,7 +55,9 @@ export const FetchXmlEditorDialog = observer(
       vm.selectedView = undefined;
       vm.fetchXml = localFetchXml;
       vm.fetchXmlEditorOpen = false;
-      onLoad?.();
+      if (!queryChanged) {
+        onLoad?.();
+      }
     };
 
     const handleCancel = () => {
