@@ -48,6 +48,7 @@ export class dvService {
     }
 
     const activeConnection = await window.toolboxAPI.connections.getActiveConnection();
+    this.throwIfCancelled(signal);
     if (!activeConnection || activeConnection.id !== this.connection.id) {
       throw new Error(
         "The active Dataverse connection changed after this operation was prepared. Reload the records and try again.",
@@ -297,6 +298,7 @@ export class dvService {
           parentCloneFields,
           allTables,
         );
+        await this.assertActiveConnection(signal);
         const createResult = await this.dvApi.create(parentTable.logicalName, payload);
         parentIdMap.set(String(oldId), createResult.id);
         parentCloned += 1;
@@ -383,6 +385,7 @@ export class dvService {
               allTables,
             );
             childPayload[`${lookupBindName}@odata.bind`] = `/${sourceParentTable.setName}(${newParentId})`;
+            await this.assertActiveConnection(signal);
             const createdChild = await this.dvApi.create(childTable.logicalName, childPayload);
             childIdMappings.set(String(oldChildId), createdChild.id);
             childCloned += 1;

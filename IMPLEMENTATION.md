@@ -39,8 +39,9 @@ src/
 
 ## Composition and state
 
-`App.tsx` obtains the active PPTB connection and theme, creates the Dataverse and utility services,
-and constructs one `ViewModel` for the lifetime of the tool.
+`App.tsx` obtains the active PPTB connection and theme and creates a connection-scoped
+`ViewModel`, Dataverse service, and utility service. The main tool component is keyed by connection
+ID so drawers, dialogs, and component-local selections are remounted with each environment.
 
 The `ViewModel` owns:
 
@@ -51,9 +52,10 @@ The `ViewModel` owns:
 - FetchXML state;
 - clone exclusions and child relationship configuration.
 
-When the active connection changes, `resetForConnectionChange()` clears environment-specific
-metadata, records, selections, update configuration, FetchXML, clone configuration, and pending
-confirmation dialogs. Services are reconstructed with the new connection.
+When the active connection changes, React synchronously creates a fresh model and remounts the
+connection-dependent UI. Requests started for the previous environment retain only the discarded
+old model, so late responses cannot repopulate the current environment's state. Services are
+reconstructed with the new connection.
 
 ## PPTB and Dataverse APIs
 

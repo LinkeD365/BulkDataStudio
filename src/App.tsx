@@ -6,6 +6,8 @@ import {
 } from "./hooks/useToolboxAPI";
 import {
   FluentProvider,
+  Spinner,
+  Text,
   webDarkTheme,
   webLightTheme,
 } from "@fluentui/react-components";
@@ -15,10 +17,10 @@ import { utilService } from "./utils/utils";
 import { ViewModel } from "./model/vm";
 
 function App() {
-  const { connection, refreshConnection } = useConnection();
+  const { connection, isLoading, refreshConnection } = useConnection();
   const { addLog } = useEventLog();
   const [theme, setTheme] = useState<string>("light");
-  const invocationContextHandledRef = useRef(false);
+  const invocationContextConnectionRef = useRef<string | null>(null);
   const previousConnectionIdRef = useRef<string | null>(null);
   // Handle platform events
   const handleEvent = useCallback(
@@ -67,6 +69,8 @@ function App() {
     addLog("Bulk Data Studio initialized", "success");
   }, [addLog]);
 
+  const viewModel = useMemo(() => new ViewModel(), [connection?.id]);
+
   const dvSvc = useMemo(() => {
     if (!connection) return null;
     return new dvService({
@@ -76,15 +80,11 @@ function App() {
     });
   }, [connection, addLog]);
 
-  const [viewModel] = useState(() => new ViewModel());
-
   useEffect(() => {
     const currentConnectionId = connection?.id ?? null;
     const previousConnectionId = previousConnectionIdRef.current;
 
     if (previousConnectionId !== null && previousConnectionId !== currentConnectionId) {
-      viewModel.resetForConnectionChange();
-      invocationContextHandledRef.current = false;
       addLog("Connection changed. Loaded data and pending operations were cleared.", "warning");
       void window.toolboxAPI.utils.showNotification({
         title: "Connection Changed",
@@ -94,12 +94,12 @@ function App() {
     }
 
     previousConnectionIdRef.current = currentConnectionId;
-  }, [connection?.id, viewModel, addLog]);
+  }, [connection?.id, addLog]);
 
   const utils = useMemo(() => {
-    if (!connection) return null;
+    if (!connection || !dvSvc) return null;
     return new utilService({
-      dvSvc: dvSvc!,
+      dvSvc,
       vm: viewModel,
       onLog: addLog,
     });
@@ -110,11 +110,11 @@ function App() {
       return;
     }
 
-    if (invocationContextHandledRef.current) {
+    if (invocationContextConnectionRef.current === connection.id) {
       return;
     }
 
-    invocationContextHandledRef.current = true;
+    invocationContextConnectionRef.current = connection.id;
 
     (async () => {
       try {
@@ -160,15 +160,26 @@ function App() {
       }
     })();
   }, [connection, dvSvc, utils, viewModel, addLog]);
-  return (
-    <FluentProvider theme={theme === "dark" ? webDarkTheme : webLightTheme}>
+
+  const content =
+    connection && dvSvc && utils ? (
       <BulkDataStudio
+        key={connection.id}
         connection={connection}
-        dvSvc={dvSvc!}
+        dvSvc={dvSvc}
         vm={viewModel}
         onLog={addLog}
-        utils={utils!}
+        utils={utils}
       />
+    ) : (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        {isLoading ? <Spinner label="Loading connection..." /> : <Text>Select a Dataverse connection to continue.</Text>}
+      </div>
+    );
+
+  return (
+    <FluentProvider theme={theme === "dark" ? webDarkTheme : webLightTheme}>
+      {content}
     </FluentProvider>
   );
 }

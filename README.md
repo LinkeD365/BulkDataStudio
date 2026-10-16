@@ -97,11 +97,15 @@ to being listed as a contributor to this project.
 - Added environment, URL, table, record-count, production, automation, and rollback warnings to all destructive-operation confirmations.
 - Added active-connection locking and fresh selected-record validation before Dataverse writes.
 - Clear loaded data and pending operations when the active connection changes.
+- Isolated each connection in a fresh view model and remounted connection-specific UI to prevent stale asynchronous results.
+- Closed cancellation and connection-change race windows immediately before clone record creation.
 - Added bounded batch concurrency and cancellation between update, touch, delete, and clone batches.
 - Removed Dataverse record payloads from diagnostic logging.
 - Added marketplace documentation for tool differences, data changes, privacy, attribution, and recovery limitations.
 - Added an AI-assistance disclosure confirming human review and accountability.
 - Added maintainer implementation documentation and included linked documentation in the npm package.
+- Included the PPTB invocation manifest in the npm package so installed tools retain FetchXML launch support.
+- Updated the PPTB API type definitions and validation tooling to version 1.2.7.
 - Replaced the publisher-branded marketplace icon with a tool-oriented, theme-aware bulk-data icon.
 
 08/10/26

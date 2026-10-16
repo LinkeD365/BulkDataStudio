@@ -25,25 +25,6 @@ export class ViewModel {
   constructor() {
     makeAutoObservable(this);
   }
-
-  resetForConnectionChange(): void {
-    this.tables = [];
-    this.selectedTable = undefined;
-    this.selectedView = undefined;
-    this.selectedRows = [];
-    this.updateCols = [];
-    this.data = undefined;
-    this.isDataLoading = false;
-    this.updateDialogOpen = false;
-    this.touchDialogOpen = false;
-    this.deleteDialogOpen = false;
-    this.fetchXmlEditorOpen = false;
-    this.fetchXml = undefined;
-    this.fetchFields = [];
-    this.clonePanelOpen = false;
-    this.cloneSkippedFields = [];
-    this.cloneChildConfigs = [];
-  }
 }
 
 export class CloneChildConfig {

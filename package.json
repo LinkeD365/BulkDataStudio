@@ -54,7 +54,7 @@
     "react-simple-code-editor": "^0.14.1"
   },
   "devDependencies": {
-    "@pptb/types": "^1.2.4",
+    "@pptb/types": "^1.2.7",
     "@types/prismjs": "^1.26.5",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -65,6 +65,7 @@
   "files": [
     "dist",
     "npm-shrinkwrap.json",
+    "pptb.config.json",
     "IMPLEMENTATION.md",
     "CALCULATED_COLUMNS.md"
   ]
