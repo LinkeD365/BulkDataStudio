@@ -22,6 +22,7 @@ This tool allows users to perform bulk data operations efficiently within Micros
 - ✅ Bulk delete selected records
 - ✅ Save/Load Job
 - ✅ Allow Edit of FetchXml
+- ✅ Accept FetchXML from other Power Platform ToolBox tools
 - ✅ Touch per field
 - ✅ Some XrmTokens for calculated fields
 - 📘 Calculated fields reference: [All calculated field options](CALCULATED_COLUMNS.md)
