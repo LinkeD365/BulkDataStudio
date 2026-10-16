@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 256 256">
+
+  <!-- Database -->
+  <g fill="none"
+     stroke="currentColor"
+     stroke-width="12"
+     stroke-linecap="round"
+     stroke-linejoin="round">
+
+    <ellipse cx="92" cy="52" rx="58" ry="24"/>
+
+    <path d="M34 52v48
+             c0 13 26 24 58 24
+             s58-11 58-24V52"/>
+
+    <path d="M34 100v48
+             c0 13 26 24 58 24
+             c11 0 21-1 30-4"/>
+
+    <path d="M34 148v32
+             c0 13 26 24 58 24
+             c10 0 20-1 29-3"/>
+  </g>
+
+  <!-- Thin bulk data arrows -->
+  <g fill="none"
+     stroke="currentColor"
+     stroke-width="7"
+     stroke-linecap="round"
+     stroke-linejoin="round">
+
+    <path d="M218 145H143"/>
+    <path d="M160 130l-17 15 17 15"/>
+
+    <path d="M218 181H143"/>
+    <path d="M160 166l-17 15 17 15"/>
+
+    <path d="M218 217H143"/>
+    <path d="M160 202l-17 15 17 15"/>
+  </g>
+
+</svg>

@@ -3,6 +3,7 @@ import { CloneChildConfig, Column, SelectionValue, Table, View } from "../model/
 import { ExpressionEvaluator } from "./expressionEvaluator";
 
 const DEFAULT_FETCH_LIMIT = 250;
+const MAX_CONCURRENT_BATCHES = 4;
 
 interface dvServiceProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -29,6 +30,93 @@ export class dvService {
     this.connection = props.connection;
     this.dvApi = props.dvApi;
     this.onLog = props.onLog;
+  }
+
+  private throwIfCancelled(signal?: AbortSignal): void {
+    if (signal?.aborted) {
+      throw new DOMException(
+        "Operation cancelled. Earlier batches may have completed and requests already in progress may still complete.",
+        "AbortError",
+      );
+    }
+  }
+
+  private async assertActiveConnection(signal?: AbortSignal): Promise<void> {
+    this.throwIfCancelled(signal);
+    if (!this.connection) {
+      throw new Error("No connection available");
+    }
+
+    const activeConnection = await window.toolboxAPI.connections.getActiveConnection();
+    if (!activeConnection || activeConnection.id !== this.connection.id) {
+      throw new Error(
+        "The active Dataverse connection changed after this operation was prepared. Reload the records and try again.",
+      );
+    }
+  }
+
+  private async runBatches<T>(
+    batches: T[],
+    operation: (batch: T) => Promise<void>,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    let nextBatch = 0;
+    let stopped = false;
+    let failure: unknown;
+    const workerCount = Math.min(MAX_CONCURRENT_BATCHES, batches.length);
+
+    const worker = async (): Promise<void> => {
+      while (!stopped && nextBatch < batches.length) {
+        try {
+          this.throwIfCancelled(signal);
+          const batchIndex = nextBatch++;
+          await this.assertActiveConnection(signal);
+          await operation(batches[batchIndex]);
+        } catch (error) {
+          stopped = true;
+          failure ??= error;
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    if (failure) {
+      throw failure;
+    }
+  }
+
+  private async validateSelectedRows(
+    table: Table,
+    rows: SelectionValue[],
+    signal?: AbortSignal,
+  ): Promise<void> {
+    await this.assertActiveConnection(signal);
+    const batches: SelectionValue[][] = [];
+    for (let i = 0; i < rows.length; i += this.batchSize) {
+      batches.push(rows.slice(i, i + this.batchSize));
+    }
+
+    const existingIds = new Set<string>();
+    await this.runBatches(
+      batches,
+      async (batch) => {
+        const idsXml = batch.map((row) => `<value>${row.value}</value>`).join("");
+        const fetchXml = `<fetch><entity name="${table.logicalName}"><attribute name="${table.primaryIdAttribute}"/><filter><condition attribute="${table.primaryIdAttribute}" operator="in">${idsXml}</condition></filter></entity></fetch>`;
+        const result = await this.dvApi.fetchXmlQuery(fetchXml);
+        const records = Array.isArray(result?.value) ? result.value : [];
+        for (const record of records) {
+          existingIds.add(String(record[table.primaryIdAttribute]));
+        }
+      },
+      signal,
+    );
+
+    const missingCount = rows.filter((row) => !existingIds.has(String(row.value))).length;
+    if (missingCount > 0) {
+      throw new Error(
+        `${missingCount} selected record${missingCount === 1 ? "" : "s"} no longer exist or are no longer accessible. Refresh the data before continuing.`,
+      );
+    }
   }
 
   private isCloneSupportedFieldType(field: Column): boolean {
@@ -130,6 +218,7 @@ export class dvService {
     skippedParentFields: string[],
     childConfigs: CloneChildConfig[],
     allTables: Table[],
+    signal?: AbortSignal,
   ): Promise<{ parentCloned: number; childCloned: number }> {
     if (!this.connection) {
       throw new Error("No connection available");
@@ -137,6 +226,7 @@ export class dvService {
     if (!parentTable || rows.length === 0) {
       throw new Error("No parent table or rows selected for clone operation");
     }
+    await this.validateSelectedRows(parentTable, rows, signal);
 
     const tableKeyCache = new Map<string, Set<string>>();
     const getCachedAlternateKeyFields = async (tableLogicalName: string): Promise<Set<string>> => {
@@ -176,7 +266,9 @@ export class dvService {
       parentBatches.push(rows.slice(i, i + this.batchSize));
     }
 
+    await this.validateSelectedRows(parentTable, rows, signal);
     for (const batch of parentBatches) {
+      await this.assertActiveConnection(signal);
       const idsXml = batch.map((row) => `<value>${row.value}</value>`).join("");
       const attrsXml = parentFieldNames.map((f) => `<attribute name='${f}'/>`).join("");
       const fetchXml = `<fetch>
@@ -193,6 +285,7 @@ export class dvService {
       const sourceRecords = Array.isArray(sourceData?.value) ? sourceData.value : [];
 
       for (const sourceRecord of sourceRecords) {
+        await this.assertActiveConnection(signal);
         const oldId = sourceRecord[parentTable.primaryIdAttribute];
         if (!oldId) {
           continue;
@@ -262,6 +355,7 @@ export class dvService {
         const childIdMappings = new Map<string, string>();
 
         for (const [oldParentId, newParentId] of parentIdMappings.entries()) {
+          this.throwIfCancelled(signal);
           const childAttrsXml = childFieldNames.map((f) => `<attribute name='${f}'/>`).join("");
           const childFetchXml = `<fetch>
   <entity name="${childTable.logicalName}">
@@ -276,6 +370,7 @@ export class dvService {
           const childData = await this.dvApi.fetchXmlQuery(childFetchXml);
           const childRecords = Array.isArray(childData?.value) ? childData.value : [];
           for (const childRecord of childRecords) {
+            await this.assertActiveConnection(signal);
             const oldChildId = childRecord[childTable.primaryIdAttribute];
             if (!oldChildId) {
               continue;
@@ -610,128 +705,119 @@ export class dvService {
     }
   }
 
-  async updateData(table: Table, rows: SelectionValue[], updates: UpdateColumn[]): Promise<void> {
-    return new Promise<void>(async (resolve, reject) => {
-      if (!this.connection) {
-        this.onLog("No connection available", "error");
-        reject(new Error("No connection available"));
+  async updateData(
+    table: Table,
+    rows: SelectionValue[],
+    updates: UpdateColumn[],
+    signal?: AbortSignal,
+  ): Promise<void> {
+    if (!this.connection) {
+      throw new Error("No connection available");
+    }
+    if (!table || !rows || rows.length === 0) {
+      throw new Error("No table or rows selected for data update");
+    }
+    if (!updates || updates.length === 0) {
+      throw new Error("No fields selected for data update");
+    }
+
+    await this.validateSelectedRows(table, rows, signal);
+    const evaluatedUpdates = await this.evaluateCalculatedColumns(table, rows, updates, signal);
+    this.throwIfCancelled(signal);
+
+    const touchUpdates = evaluatedUpdates.filter((update) => update.setStatus === "Touch");
+    const hasCalculatedUpdates = evaluatedUpdates.some((update) => update.setStatus === "Calculated");
+    const needsRecordFetch = evaluatedUpdates.some((update) => update.onlyDifferent) || touchUpdates.length > 0;
+
+    let data: Record<string, unknown>[] = [];
+    if (needsRecordFetch || hasCalculatedUpdates) {
+      const fieldsToFetch = new Set<string>();
+      touchUpdates.forEach((update) => fieldsToFetch.add(update.column.logicalName));
+      evaluatedUpdates
+        .filter((update) => update.onlyDifferent)
+        .forEach((update) => fieldsToFetch.add(update.column.logicalName));
+
+      const recordMap = new Map<string, Record<string, unknown>>();
+      const evaluationBatches: SelectionValue[][] = [];
+      for (let i = 0; i < rows.length; i += this.batchSize) {
+        evaluationBatches.push(rows.slice(i, i + this.batchSize));
       }
-      if (!table || !rows || rows.length === 0) {
-        this.onLog("No table  or rows selected for data update", "error");
-        reject(new Error("No table  or rows selected for data update"));
+
+      if (fieldsToFetch.size > 0) {
+        await this.runBatches(
+          evaluationBatches,
+          async (batch) => {
+            const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
+            const attributeString = Array.from(fieldsToFetch)
+              .map((field) => `<attribute name='${field}'/>`)
+              .join("");
+            const fetchXml = `<fetch><entity name="${table.logicalName}">${attributeString}<attribute name="${table.primaryIdAttribute}"/><filter><condition attribute="${table.primaryIdAttribute}" operator="in">${rowsString}</condition></filter></entity></fetch>`;
+            const result = await this.dvApi.fetchXmlQuery(fetchXml);
+            const records = Array.isArray(result?.value) ? result.value : [];
+            this.onLog(`Fetched ${records.length} records for update evaluation`, "info");
+            records.forEach((record) => {
+              recordMap.set(String(record[table.primaryIdAttribute]), record);
+            });
+          },
+          signal,
+        );
       }
 
-      if (!updates || updates.length === 0) {
-        this.onLog("No fields selected for data update", "error");
-        reject(new Error("No fields selected for data update"));
-      }
+      data = rows.map((row) => {
+        const record = recordMap.get(String(row.value));
+        const payload: Record<string, unknown> = {
+          [table.primaryIdAttribute]: row.value,
+          "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
+        };
 
-      // Evaluate calculated columns before update
-      const evaluatedUpdates = await this.evaluateCalculatedColumns(table, rows, updates);
-
-      const touchUpdates = evaluatedUpdates.filter((u) => u.setStatus === "Touch");
-      const hasCalculatedUpdates = evaluatedUpdates.some((u) => u.setStatus === "Calculated");
-      const needsRecordFetch = evaluatedUpdates.some((u) => u.onlyDifferent) || touchUpdates.length > 0;
-
-      let data: any[] = [];
-      if (needsRecordFetch || hasCalculatedUpdates) {
-        // Determine fields to fetch: touch columns + onlyDifferent columns
-        const fieldsToFetch = new Set<string>();
-        touchUpdates.forEach((u) => fieldsToFetch.add(u.column.logicalName));
-        evaluatedUpdates.filter((u) => u.onlyDifferent).forEach((u) => fieldsToFetch.add(u.column.logicalName));
-
-        const recordMap = new Map<string, any>();
-        const batches: SelectionValue[][] = [];
-        for (let i = 0; i < rows.length; i += this.batchSize) {
-          batches.push(rows.slice(i, i + this.batchSize));
-        }
-        if (fieldsToFetch.size > 0) {
-          await Promise.all(
-            batches.map(async (batch) => {
-              const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
-              const attributeString = Array.from(fieldsToFetch)
-                .map((f) => `<attribute name='${f}'/>`)
-                .join("");
-              const fetchXML = `<fetch>
-    <entity name="${table.logicalName}">
-    ${attributeString}
-    <filter type="and">
-      <condition attribute="${table.primaryIdAttribute}" operator="in">${rowsString}
-      </condition>
-    </filter>
-    </entity>
-  </fetch>`;
-              const checkData = await this.dvApi.fetchXmlQuery(fetchXML);
-              this.onLog(`Fetched records for update evaluation: ${JSON.stringify(checkData)}`, "info");
-              const records = Array.isArray(checkData?.value) ? checkData.value : [];
-              records.forEach((r: any) => recordMap.set(r[table.primaryIdAttribute], r));
-            }),
-          );
-        }
-
-        // Build per-record payloads combining touch values with other updates
-        data = rows.map((row) => {
-          const record = recordMap.get(row.value);
-          const payload: any = {
-            [table.primaryIdAttribute]: row.value,
-            "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
-          };
-
-          evaluatedUpdates.forEach((upd) => {
-            if (upd.setStatus === "Touch") {
-              if (record) {
-                const val = this.getTouchValue(upd, record);
-                if (val !== undefined) {
-                  payload[upd.dbField] = val;
-                }
+        evaluatedUpdates.forEach((update) => {
+          if (update.setStatus === "Touch") {
+            if (record) {
+              const value = this.getTouchValue(update, record);
+              if (value !== undefined) {
+                payload[update.dbField] = value;
               }
-            } else if (upd.setStatus === "Calculated") {
-              const rowAny = row as any;
-              if (rowAny.updatePayload && rowAny.updatePayload[upd.dbField] !== undefined) {
-                payload[upd.dbField] = rowAny.updatePayload[upd.dbField];
-              }
-            } else if (upd.onlyDifferent) {
-              if (!record || record[upd.column.logicalName] !== upd.dbValue) {
-                payload[upd.dbField] = upd.dbValue;
-              }
-            } else {
-              payload[upd.dbField] = upd.dbValue;
             }
-          });
+          } else if (update.setStatus === "Calculated") {
+            const updatePayload = (row as SelectionValue & { updatePayload?: Record<string, unknown> }).updatePayload;
+            if (updatePayload?.[update.dbField] !== undefined) {
+              payload[update.dbField] = updatePayload[update.dbField];
+            }
+          } else if (update.onlyDifferent) {
+            if (!record || record[update.column.logicalName] !== update.dbValue) {
+              payload[update.dbField] = update.dbValue;
+            }
+          } else {
+            payload[update.dbField] = update.dbValue;
+          }
+        });
 
+        return payload;
+      });
+    } else {
+      data = rows.map((row) => ({
+        [table.primaryIdAttribute]: row.value,
+        "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
+        ...evaluatedUpdates.reduce<Record<string, unknown>>((payload, update) => {
+          payload[update.dbField] = update.dbValue;
           return payload;
-        });
-      } else {
-        data = rows.map((row) => {
-          return {
-            [table.primaryIdAttribute]: row.value,
-            "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
-            ...evaluatedUpdates.reduce((acc, curr) => {
-              acc[curr.dbField] = curr.dbValue;
-              return acc;
-            }, {} as any),
-          };
-        });
-      }
+        }, {}),
+      }));
+    }
 
-      const batches: any[] = [];
-      for (let i = 0; i < data.length; i += this.batchSize) {
-        batches.push(data.slice(i, i + this.batchSize));
-      }
-      this.onLog(`Updating ${data.length} records in table: ${table.displayName}`, "info");
-      window.toolboxAPI.utils
-        .executeParallel(() => Promise.all(batches.map((batch) => this.dvApi.updateMultiple(table.logicalName, batch))))
-        .then(() => {
-          this.onLog(`Successfully updated ${data.length} records`, "success");
-          resolve();
-        })
-        .catch((error) => {
-          this.onLog(`Error creating data: ${error}`, "error");
-          console.error("Error creating data:", error);
+    const batches: Record<string, unknown>[][] = [];
+    for (let i = 0; i < data.length; i += this.batchSize) {
+      batches.push(data.slice(i, i + this.batchSize));
+    }
 
-          reject(error);
-        });
-    });
+    await this.validateSelectedRows(table, rows, signal);
+    this.onLog(`Updating ${data.length} records in table: ${table.displayName}`, "info");
+    await this.runBatches(
+      batches,
+      (batch) => this.dvApi.updateMultiple(table.logicalName, batch),
+      signal,
+    );
+    this.onLog(`Successfully updated ${data.length} records`, "success");
   }
 
   /**
@@ -762,6 +848,7 @@ export class dvService {
     table: Table,
     rows: SelectionValue[],
     updates: UpdateColumn[],
+    signal?: AbortSignal,
   ): Promise<UpdateColumn[]> {
     const calculatedUpdates = updates.filter((u) => u.setStatus === "Calculated");
     if (calculatedUpdates.length === 0) {
@@ -800,8 +887,9 @@ export class dvService {
 
       const recordMap = new Map<string, any>();
 
-      await Promise.all(
-        batches.map(async (batch) => {
+      await this.runBatches(
+        batches,
+        async (batch) => {
           const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
           const attributeString = fieldsArray.map((f) => `<attribute name='${f}'/>`).join("");
 
@@ -815,16 +903,13 @@ export class dvService {
     </entity>
   </fetch>`;
 
-          try {
-            const data = await this.dvApi.fetchXmlQuery(fetchXML);
-            const records = Array.isArray(data?.value) ? data.value : [];
-            records.forEach((record: any) => {
-              recordMap.set(record[table.primaryIdAttribute], record);
-            });
-          } catch (error) {
-            this.onLog(`Error fetching records for calculated columns: ${error}`, "warning");
-          }
-        }),
+          const data = await this.dvApi.fetchXmlQuery(fetchXML);
+          const records = Array.isArray(data?.value) ? data.value : [];
+          records.forEach((record: any) => {
+            recordMap.set(record[table.primaryIdAttribute], record);
+          });
+        },
+        signal,
       );
 
       // Evaluate expressions for each record and update calculated columns
@@ -943,32 +1028,29 @@ export class dvService {
     });
   }
 
-  async touchData(table: Table, rows: SelectionValue[]): Promise<void> {
-    return new Promise<void>(async (resolve, reject) => {
-      if (!this.connection) {
-        this.onLog("No connection available", "error");
-        reject(new Error("No connection available"));
-        return;
-      }
-      if (!table || !rows || rows.length === 0) {
-        this.onLog("No table  or rows selected for data touch", "error");
-        reject(new Error("No table  or rows selected for data touch"));
-        return;
-      }
+  async touchData(table: Table, rows: SelectionValue[], signal?: AbortSignal): Promise<void> {
+    if (!this.connection) {
+      throw new Error("No connection available");
+    }
+    if (!table || !rows || rows.length === 0) {
+      throw new Error("No table or rows selected for data touch");
+    }
 
-      const batches: SelectionValue[][] = [];
-      for (let i = 0; i < rows.length; i += this.batchSize) {
-        batches.push(rows.slice(i, i + this.batchSize));
-      }
+    await this.validateSelectedRows(table, rows, signal);
+    const batches: SelectionValue[][] = [];
+    for (let i = 0; i < rows.length; i += this.batchSize) {
+      batches.push(rows.slice(i, i + this.batchSize));
+    }
 
-      try {
-        await Promise.all(
-          batches.map(async (batch) => {
-            const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
+    await this.runBatches(
+      batches,
+      async (batch) => {
+        const rowsString = batch.map((row) => `<value>${row.value}</value>`).join("");
 
-            const fetchXML = `<fetch>
+        const fetchXml = `<fetch>
     <entity name="${table.logicalName}">
     <attribute name="${table.primaryNameAttribute}" />
+    <attribute name="${table.primaryIdAttribute}" />
     <filter type="and">
       <condition attribute="${table.primaryIdAttribute}" operator="in">${rowsString}
       </condition>
@@ -976,66 +1058,47 @@ export class dvService {
     </entity>
   </fetch>`;
 
-            const data = await this.dvApi.fetchXmlQuery(fetchXML);
+        const result = await this.dvApi.fetchXmlQuery(fetchXml);
+        const records = Array.isArray(result?.value) ? result.value : [];
+        const touchData = records.map((row) => ({
+          [table.primaryIdAttribute]: row[table.primaryIdAttribute],
+          [table.primaryNameAttribute]: row[table.primaryNameAttribute],
+          "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
+        }));
 
-            const touchData = data.value.map((row) => {
-              return {
-                [table.primaryIdAttribute]: row[table.primaryIdAttribute],
-                [table.primaryNameAttribute]: row[table.primaryNameAttribute],
-                "@odata.type": `Microsoft.Dynamics.CRM.${table.logicalName}`,
-              };
-            });
-
-            await this.dvApi.updateMultiple(table.logicalName, touchData);
-          }),
-        );
-
-        this.onLog(`Successfully touched ${rows.length} records`, "success");
-        resolve();
-      } catch (error) {
-        this.onLog(`Error touching data: ${error}`, "error");
-        reject(error);
-      }
-    });
+        await this.assertActiveConnection(signal);
+        await this.dvApi.updateMultiple(table.logicalName, touchData);
+      },
+      signal,
+    );
+    this.onLog(`Successfully touched ${rows.length} records`, "success");
   }
 
-  async deleteData(table: Table, rows: SelectionValue[]): Promise<void> {
-    return new Promise<void>(async (resolve, reject) => {
-      if (!this.connection) {
-        this.onLog("No connection available", "error");
-        reject(new Error("No connection available"));
-        return;
-      }
-      if (!table || !rows || rows.length === 0) {
-        this.onLog("No table or rows selected for deletion", "error");
-        reject(new Error("No table or rows selected for deletion"));
-        return;
-      }
+  async deleteData(table: Table, rows: SelectionValue[], signal?: AbortSignal): Promise<void> {
+    if (!this.connection) {
+      throw new Error("No connection available");
+    }
+    if (!table || !rows || rows.length === 0) {
+      throw new Error("No table or rows selected for deletion");
+    }
 
-      const batches: SelectionValue[][] = [];
-      for (let i = 0; i < rows.length; i += this.batchSize) {
-        batches.push(rows.slice(i, i + this.batchSize));
-      }
+    await this.validateSelectedRows(table, rows, signal);
+    const batches: SelectionValue[][] = [];
+    for (let i = 0; i < rows.length; i += this.batchSize) {
+      batches.push(rows.slice(i, i + this.batchSize));
+    }
 
-      this.onLog(`Deleting ${rows.length} records from table: ${table.displayName}`, "info");
-
-      try {
-        await Promise.all(
-          batches.map(async (batch) => {
-            await Promise.all(
-              batch.map(async (row) => {
-                await this.dvApi.delete(table.logicalName, row.value);
-              }),
-            );
-          }),
-        );
-
-        this.onLog(`Successfully deleted ${rows.length} records`, "success");
-        resolve();
-      } catch (error) {
-        this.onLog(`Error deleting data: ${error}`, "error");
-        reject(error);
-      }
-    });
+    this.onLog(`Deleting ${rows.length} records from table: ${table.displayName}`, "info");
+    await this.runBatches(
+      batches,
+      async (batch) => {
+        for (const row of batch) {
+          await this.assertActiveConnection(signal);
+          await this.dvApi.delete(table.logicalName, row.value);
+        }
+      },
+      signal,
+    );
+    this.onLog(`Successfully deleted ${rows.length} records`, "success");
   }
 }

@@ -19,6 +19,7 @@ function App() {
   const { addLog } = useEventLog();
   const [theme, setTheme] = useState<string>("light");
   const invocationContextHandledRef = useRef(false);
+  const previousConnectionIdRef = useRef<string | null>(null);
   // Handle platform events
   const handleEvent = useCallback(
     async (event: string, _data: any) => {
@@ -76,6 +77,25 @@ function App() {
   }, [connection, addLog]);
 
   const [viewModel] = useState(() => new ViewModel());
+
+  useEffect(() => {
+    const currentConnectionId = connection?.id ?? null;
+    const previousConnectionId = previousConnectionIdRef.current;
+
+    if (previousConnectionId !== null && previousConnectionId !== currentConnectionId) {
+      viewModel.resetForConnectionChange();
+      invocationContextHandledRef.current = false;
+      addLog("Connection changed. Loaded data and pending operations were cleared.", "warning");
+      void window.toolboxAPI.utils.showNotification({
+        title: "Connection Changed",
+        body: "Loaded records and pending operations were cleared to prevent changes in the wrong environment.",
+        type: "warning",
+      });
+    }
+
+    previousConnectionIdRef.current = currentConnectionId;
+  }, [connection?.id, viewModel, addLog]);
+
   const utils = useMemo(() => {
     if (!connection) return null;
     return new utilService({
