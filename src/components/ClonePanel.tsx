@@ -100,6 +100,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
   const [parentFieldsCache, setParentFieldsCache] = React.useState<Record<string, Column[]>>({});
   const [keyFieldsByTable, setKeyFieldsByTable] = React.useState<Record<string, string[]>>({});
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const cloneAbortController = React.useRef<AbortController | null>(null);
   const childTablesByParentRef = React.useRef<Record<string, Table[]>>({});
   const childRelationshipsByParentRef = React.useRef<Record<string, Record<string, string[]>>>({});
 
@@ -581,6 +582,8 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
       return;
     }
 
+    const controller = new AbortController();
+    cloneAbortController.current = controller;
     setCloning(true);
     try {
       const result = await dvSvc.cloneData(
@@ -589,6 +592,7 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
         vm.cloneSkippedFields,
         vm.cloneChildConfigs,
         vm.tables,
+        controller.signal,
       );
 
       onLog(`Clone completed. Parent records: ${result.parentCloned}, Child records: ${result.childCloned}`, "success");
@@ -603,13 +607,15 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
       await utils.delayLoadData(1000);
     } catch (error: any) {
       const message = error && typeof error.message === "string" ? error.message : String(error);
-      onLog(`Clone failed: ${message}`, "error");
+      const wasCancelled = error instanceof DOMException && error.name === "AbortError";
+      onLog(`Clone ${wasCancelled ? "cancelled" : "failed"}: ${message}`, wasCancelled ? "warning" : "error");
       await window.toolboxAPI.utils.showNotification({
-        title: "Clone Failed",
+        title: wasCancelled ? "Clone Cancelled" : "Clone Failed",
         body: message,
-        type: "error",
+        type: wasCancelled ? "warning" : "error",
       });
     } finally {
+      cloneAbortController.current = null;
       setCloning(false);
     }
   };
@@ -738,7 +744,11 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
     <>
       <Drawer
         open={vm.clonePanelOpen}
-        onOpenChange={(_, data) => (vm.clonePanelOpen = data.open)}
+        onOpenChange={(_, data) => {
+          if (!cloning) {
+            vm.clonePanelOpen = data.open;
+          }
+        }}
         size="medium"
         position="end"
       >
@@ -874,8 +884,17 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
           )}
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", width: "100%" }}>
-            <Button appearance="secondary" onClick={() => (vm.clonePanelOpen = false)} disabled={cloning}>
-              Cancel
+            <Button
+              appearance="secondary"
+              onClick={() => {
+                if (cloning) {
+                  cloneAbortController.current?.abort();
+                } else {
+                  vm.clonePanelOpen = false;
+                }
+              }}
+            >
+              {cloning ? "Cancel Operation" : "Cancel"}
             </Button>
             <Button
               appearance="primary"
@@ -903,7 +922,29 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
         <DialogSurface>
           <DialogBody>
             <DialogTitle>Confirm Clone</DialogTitle>
-            <DialogContent>
+            <DialogContent style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {dvSvc.connection?.environment === "Production" && (
+                <MessageBar intent="error">
+                  <MessageBarBody>
+                    Production environment: verify the target and maintain a suitable backup before proceeding.
+                  </MessageBarBody>
+                </MessageBar>
+              )}
+              <Text block>
+                <strong>Operation:</strong> Create cloned records
+              </Text>
+              <Text block>
+                <strong>Environment:</strong> {dvSvc.connection?.name ?? "Unknown"} (
+                {dvSvc.connection?.environment ?? "Unknown"})
+              </Text>
+              <Text block>
+                <strong>URL:</strong> {dvSvc.connection?.url ?? "Unknown"}
+              </Text>
+              <Text block>
+                <strong>Scope:</strong> {vm.selectedRows.length} {vm.selectedTable?.displayName ?? "unknown table"} parent
+                record{vm.selectedRows.length === 1 ? "" : "s"}
+                {vm.cloneChildConfigs.length > 0 ? " plus configured related child records" : ""}
+              </Text>
               <Text block>
                 Cloning will create new records in Dataverse.
                 {vm.cloneSkippedFields.length === 0 && (
@@ -916,6 +957,12 @@ export const ClonePanel = observer((props: ClonePanelProps): React.JSX.Element =
                 Warning: This operation may trigger any active Power Automate flows, plugins, or business rules
                 configured on these tables.
               </Text>
+              <MessageBar intent="warning">
+                <MessageBarBody>
+                  Bulk Data Studio does not create an automatic rollback. Export or back up important records before
+                  proceeding.
+                </MessageBarBody>
+              </MessageBar>
             </DialogContent>
             <DialogActions>
               <Button appearance="secondary" onClick={() => setConfirmOpen(false)}>
