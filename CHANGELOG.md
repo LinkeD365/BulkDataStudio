@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.0](https://github.com/LinkeD365/BulkDataStudio/compare/1.2.0...1.3.0) (2026-10-16)
+
+
+### Features
+
+* Add logo for Bulk Data Studio ([6415402](https://github.com/LinkeD365/BulkDataStudio/commit/6415402552f9cc0caedd8a8dc43b747bb45fc32a))
+* enhance connection handling by isolating view models and remounting UI components ([cb2951c](https://github.com/LinkeD365/BulkDataStudio/commit/cb2951cde35d68b532b1efad3e28ab81a308369b))
+* Enhance dataverseService with batch processing and cancellation support ([6415402](https://github.com/LinkeD365/BulkDataStudio/commit/6415402552f9cc0caedd8a8dc43b747bb45fc32a))
+* Implement reset functionality in ViewModel for connection changes ([6415402](https://github.com/LinkeD365/BulkDataStudio/commit/6415402552f9cc0caedd8a8dc43b747bb45fc32a))
+
 ## [1.2.0](https://github.com/LinkeD365/BulkDataStudio/compare/1.1.1...1.2.0) (2026-10-14)
 
 
