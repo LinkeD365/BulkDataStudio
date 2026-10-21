@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/LinkeD365/BulkDataStudio/compare/1.3.0...1.3.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* Merge pull request [#72](https://github.com/LinkeD365/BulkDataStudio/issues/72) from LinkeD365/copilot/check-dependencies-for-vulnerabilities ([9c5f741](https://github.com/LinkeD365/BulkDataStudio/commit/9c5f741f7062bf96998673813954d315d637a5f5))
+
 ## [1.3.0](https://github.com/LinkeD365/BulkDataStudio/compare/1.2.0...1.3.0) (2026-10-16)
 
 
